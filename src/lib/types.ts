@@ -540,6 +540,7 @@ export type PastaTabKey =
   | "publicacoes"
   | "tarefas"
   | "creditos"
+  | "radiografia"
   | "workflow"
   | "compensacoes"
   | "financeiro";

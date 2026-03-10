@@ -15,6 +15,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Contratos", href: "/contratos", icon: "◑" },
   { label: "Pastas", href: "/pastas", icon: "◫" },
   { label: "Financeiro", href: "/financeiro", icon: "◆" },
+  { label: "Radiografia", href: "/radiografia", icon: "⚡" },
   { label: "Casos IA", href: "/casos", icon: "▸" },
 ];
 

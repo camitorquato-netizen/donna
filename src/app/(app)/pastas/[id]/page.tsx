@@ -20,6 +20,7 @@ import TabTarefas from "@/components/pastas/TabTarefas";
 import TabCreditos from "@/components/pastas/TabCreditos";
 import TabWorkflow from "@/components/pastas/TabWorkflow";
 import TabCompensacoes from "@/components/pastas/TabCompensacoes";
+import TabRadiografia from "@/components/pastas/TabRadiografia";
 import TabFinanceiro from "@/components/pastas/TabFinanceiro";
 
 const statusColors: Record<string, "gold" | "green" | "muted" | "dark"> = {
@@ -122,6 +123,13 @@ export default function PastaDetailPage({
         return <TabPublicacoes pastaId={pasta!.id} />;
       case "tarefas":
         return <TabTarefas pastaId={pasta!.id} />;
+      case "radiografia":
+        return (
+          <TabRadiografia
+            pastaId={pasta!.id}
+            clienteNome={pasta!.clienteNome}
+          />
+        );
       case "creditos":
         return <TabCreditos pastaId={pasta!.id} />;
       case "workflow":
