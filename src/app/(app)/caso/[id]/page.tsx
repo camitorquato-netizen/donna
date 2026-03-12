@@ -63,6 +63,7 @@ export default function CasoPage({
             error={error}
             update={caseHook.update}
             runIntake={caseHook.runIntake}
+            runPreliminary={caseHook.runPreliminary}
             clearError={clearError}
           />
         )}

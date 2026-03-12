@@ -46,6 +46,7 @@ interface CaseRow {
   intake_notes: string;
   diag_extra_info: string;
   diagnostic_notes: string;
+  preliminary_output: string;
   diag_json: unknown;
   cliente_json: unknown;
   // Campos AppSheet
@@ -69,6 +70,7 @@ function caseToRow(c: Case): CaseRow {
     client_name: c.clientName,
     responsible: c.professional,
     status: c.step,
+    preliminary_output: c.preliminaryOutput || "",
     transcription: c.transcript,
     intake_result: c.intakeOutput,
     diagnosis_result: c.diagnosticOutput,
@@ -101,6 +103,7 @@ function rowToCase(r: CaseRow): Case {
     clientName: r.client_name || "",
     professional: r.responsible || "",
     step: (r.status || 1) as StageNumber,
+    preliminaryOutput: r.preliminary_output || "",
     transcript: r.transcription || "",
     intakeFiles: [],
     intakeOutput: r.intake_result || "",
@@ -238,6 +241,24 @@ export async function saveCase(c: Case): Promise<void> {
     .upsert(row, { onConflict: "id" });
 
   if (error) {
+    // Se a coluna preliminary_output não existir ainda, tentar sem ela
+    if (
+      error.message?.includes("preliminary_output") ||
+      error.code === "PGRST204"
+    ) {
+      console.warn(
+        "[Store] Coluna preliminary_output não encontrada. Salvando sem ela."
+      );
+      const { preliminary_output, ...rowWithout } = row;
+      void preliminary_output; // suppress unused warning
+      const { error: retryError } = await supabase
+        .from("cases")
+        .upsert(rowWithout as CaseRow, { onConflict: "id" });
+      if (retryError) {
+        console.error("[Store] Erro ao salvar caso (retry):", retryError);
+      }
+      return;
+    }
     console.error("[Store] Erro ao salvar caso:", error);
   }
 }

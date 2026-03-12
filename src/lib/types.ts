@@ -18,6 +18,9 @@ export interface Case {
   createdAt: string;
   step: StageNumber;
 
+  // Etapa 0 — Diagnóstico Preliminar
+  preliminaryOutput: string;
+
   // Etapa 1 — Intake
   transcript: string;
   intakeFiles: CaseFile[];
@@ -610,6 +613,7 @@ export function createEmptyCase(id: string): Case {
     professional: "",
     createdAt: new Date().toISOString(),
     step: 1,
+    preliminaryOutput: "",
     transcript: "",
     intakeFiles: [],
     intakeOutput: "",

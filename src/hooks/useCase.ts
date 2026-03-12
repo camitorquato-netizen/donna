@@ -3,7 +3,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { Case, CaseFile, StageNumber, DiagJSON, ClienteJSON } from "@/lib/types";
 import { getCase, saveCase } from "@/lib/store";
 import { callAnthropic, extractJSON } from "@/lib/api";
-import { P_INTAKE, P_DIAG, P_PROPOSTA, P_JSON_DIAG, P_JSON_CLIENTE } from "@/lib/prompts";
+import { P_DIAGNOSTICO_PRELIMINAR, P_INTAKE, P_DIAG, P_PROPOSTA, P_JSON_DIAG, P_JSON_CLIENTE } from "@/lib/prompts";
 
 export function useCase(caseId: string) {
   const [caso, setCaso] = useState<Case | null>(null);
@@ -48,6 +48,44 @@ export function useCase(caseId: string) {
   );
 
   const clearError = useCallback(() => setError(null), []);
+
+  // Diagnóstico Preliminar (dentro do Intake — não avança step)
+  const runPreliminary = useCallback(
+    async (transcript: string, meta?: Partial<Case>) => {
+      const cur = casoRef.current;
+      if (!cur) return;
+
+      // Persist metadata immediately
+      if (meta) persist({ ...cur, ...meta });
+
+      setLoading(true);
+      setError(null);
+      try {
+        const userText = `TRANSCRIÇÃO DA REUNIÃO INICIAL:\n\n${transcript}`;
+        const output = await callAnthropic(
+          P_DIAGNOSTICO_PRELIMINAR(),
+          userText,
+          [],
+          8000
+        );
+        persist({
+          ...casoRef.current!,
+          ...meta,
+          transcript,
+          preliminaryOutput: output,
+        });
+      } catch (e) {
+        setError(
+          e instanceof Error
+            ? e.message
+            : "Erro ao gerar diagnóstico preliminar."
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [persist]
+  );
 
   // Etapa 1 — Intake
   // meta: optional fields (clientName, professional) merged into the saved case
@@ -228,6 +266,7 @@ export function useCase(caseId: string) {
     dbReady,
     update,
     clearError,
+    runPreliminary,
     runIntake,
     approveIntake,
     runDiagnosis,
