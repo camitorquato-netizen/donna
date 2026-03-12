@@ -43,7 +43,7 @@ export default function CasoPage({
     <div className="max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-2 gap-2">
         <h2 className="font-serif text-base sm:text-lg font-bold text-st-dark truncate">
-          {caso.clientName || "Novo Caso"}
+          {caso.clientName || "Novo Piloto"}
         </h2>
         <a
           href="/casos"

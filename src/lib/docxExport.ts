@@ -39,9 +39,9 @@ const BOX_CLOSING = "F0EDE4";  // Bege — Fechamento
 /*  Parser: markdown → paragraphs docx                                 */
 /* ------------------------------------------------------------------ */
 
-function parseMarkdownToDocx(markdown: string): Paragraph[] {
+function parseMarkdownToDocx(markdown: string): (Paragraph | Table)[] {
   const lines = markdown.split("\n");
-  const paragraphs: Paragraph[] = [];
+  const paragraphs: (Paragraph | Table)[] = [];
   let inCodeBlock = false;
 
   for (let i = 0; i < lines.length; i++) {
@@ -157,6 +157,79 @@ function parseMarkdownToDocx(markdown: string): Paragraph[] {
           spacing: { before: 120, after: 120 },
         })
       );
+      continue;
+    }
+
+    // Tabela markdown
+    if (line.trimStart().startsWith("|") && line.includes("|", 1)) {
+      const tableLines: string[] = [line];
+      i++;
+      while (i < lines.length && lines[i].trimStart().startsWith("|")) {
+        tableLines.push(lines[i]);
+        i++;
+      }
+      const headerCells = tableLines[0]
+        .split("|")
+        .filter((c) => c.trim())
+        .map((c) => c.trim());
+      const isSep = (l: string) => /^\|[\s\-:|]+\|/.test(l.trim());
+      const startRow =
+        tableLines.length > 1 && isSep(tableLines[1]) ? 2 : 1;
+      const dataRows = tableLines.slice(startRow).map((r) =>
+        r
+          .split("|")
+          .filter((c) => c.trim())
+          .map((c) => c.trim())
+      );
+
+      const table = new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        rows: [
+          new TableRow({
+            tableHeader: true,
+            children: headerCells.map(
+              (h) =>
+                new TableCell({
+                  children: [
+                    new Paragraph({
+                      children: [
+                        new TextRun({
+                          text: cleanInline(h),
+                          bold: true,
+                          font: "Arial",
+                          size: 18,
+                          color: "FFFFFF",
+                        }),
+                      ],
+                    }),
+                  ],
+                  shading: { fill: ST_DARK },
+                })
+            ),
+          }),
+          ...dataRows.map(
+            (row, idx) =>
+              new TableRow({
+                children: row.map(
+                  (cell) =>
+                    new TableCell({
+                      children: [
+                        new Paragraph({
+                          children: formatInlineRuns(cell),
+                        }),
+                      ],
+                      shading: {
+                        fill: idx % 2 === 0 ? "FFFFFF" : "F5F5F0",
+                      },
+                    })
+                ),
+              })
+          ),
+        ],
+      });
+
+      paragraphs.push(table);
+      i--;
       continue;
     }
 
@@ -284,17 +357,19 @@ function cleanInline(text: string): string {
 export async function downloadDocx(
   markdown: string,
   clientName: string,
-  docType: "diagnostico" | "proposta" | "preliminar"
+  docType: "diagnostico" | "proposta" | "preliminar" | "piloto-rct"
 ) {
   const titleMap: Record<typeof docType, string> = {
     preliminar: "Diagnóstico Patrimonial Preliminar",
     diagnostico: "Diagnóstico Patrimonial",
     proposta: "Proposta de Planejamento Patrimonial",
+    "piloto-rct": "Piloto RCT — Análise Fiscal",
   };
   const fileMap: Record<typeof docType, string> = {
     preliminar: `Diagnostico_Preliminar_${sanitize(clientName)}.docx`,
     diagnostico: `Diagnostico_${sanitize(clientName)}.docx`,
     proposta: `Proposta_${sanitize(clientName)}.docx`,
+    "piloto-rct": `Piloto_RCT_${sanitize(clientName)}.docx`,
   };
   const title = titleMap[docType];
   const fileName = fileMap[docType];
@@ -371,7 +446,10 @@ export async function downloadDocx(
     new Paragraph({
       children: [
         new TextRun({
-          text: "Planejamento Patrimonial e Tributário",
+          text:
+            docType === "piloto-rct"
+              ? "Recuperação de Créditos Tributários"
+              : "Planejamento Patrimonial e Tributário",
           font: "Arial",
           size: 18,
           color: ST_MUTED,

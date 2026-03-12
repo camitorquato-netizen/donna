@@ -2,12 +2,11 @@
 import { useState } from "react";
 import {
   Credito,
-  CreditoFase,
-  CREDITO_FASE_LABELS,
   TRIBUTO_OPTIONS,
 } from "@/lib/types";
 import { saveCredito, initWfRctForCredito } from "@/lib/store";
 import Btn from "@/components/Btn";
+import UsuarioSelector from "@/components/UsuarioSelector";
 
 interface CreditoModalProps {
   credito?: Credito | null;
@@ -155,23 +154,12 @@ export default function CreditoModal({
             </div>
           </div>
 
-          {/* Fase */}
-          <div>
-            <label className="block text-xs font-sans text-st-muted mb-1">
-              Fase
-            </label>
-            <select
-              value={form.fase || "1_analise"}
-              onChange={(e) => set("fase", e.target.value as CreditoFase)}
-              className="w-full border border-st-border rounded-lg px-3 py-2 text-sm font-sans focus:outline-none focus:border-st-gold bg-white"
-            >
-              {Object.entries(CREDITO_FASE_LABELS).map(([k, v]) => (
-                <option key={k} value={k}>
-                  {v}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Analista */}
+          <UsuarioSelector
+            value={form.responsavelId || ""}
+            onChange={(id) => set("responsavelId", id || undefined)}
+            label="Analista"
+          />
 
           {/* URLs */}
           <div className="grid grid-cols-2 gap-3">

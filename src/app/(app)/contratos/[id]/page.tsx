@@ -6,6 +6,11 @@ import { getContrato, saveContrato } from "@/lib/store";
 import Btn from "@/components/Btn";
 import ClienteSelector from "@/components/ClienteSelector";
 
+const inputClass =
+  "w-full border border-st-border rounded-lg px-3 py-2 text-sm font-sans focus:outline-none focus:border-st-gold disabled:opacity-60 disabled:bg-st-light disabled:cursor-not-allowed";
+const selectClass =
+  "w-full border border-st-border rounded-lg px-3 py-2 text-sm font-sans focus:outline-none focus:border-st-gold bg-white disabled:opacity-60 disabled:bg-st-light disabled:cursor-not-allowed";
+
 export default function ContratoDetailPage({
   params,
 }: {
@@ -16,12 +21,14 @@ export default function ContratoDetailPage({
   const [contrato, setContrato] = useState<Contrato | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const c = await getContrato(id);
       setContrato(c);
+      if (c && !c.titulo) setIsEditing(true);
     } catch (err) {
       console.error("[ContratoDetail] Erro:", err);
     } finally {
@@ -42,12 +49,20 @@ export default function ContratoDetailPage({
     setSaving(true);
     try {
       await saveContrato(contrato);
+      setIsEditing(false);
     } catch (err) {
       console.error("[ContratoDetail] Erro ao salvar:", err);
     } finally {
       setSaving(false);
     }
   }
+
+  async function handleCancel() {
+    await load();
+    setIsEditing(false);
+  }
+
+  const dis = !isEditing;
 
   if (loading) {
     return (
@@ -84,9 +99,20 @@ export default function ContratoDetailPage({
         ← Voltar para contratos
       </button>
 
-      <h1 className="font-serif text-xl sm:text-2xl font-bold text-st-dark mb-6">
-        {contrato.titulo || "Novo Contrato"}
-      </h1>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6 gap-3">
+        <h1 className="font-serif text-xl sm:text-2xl font-bold text-st-dark truncate">
+          {contrato.titulo || "Novo Contrato"}
+        </h1>
+        {isEditing ? (
+          <div className="flex gap-2 shrink-0">
+            <Btn variant="ghost" onClick={handleCancel}>Cancelar</Btn>
+            <Btn variant="gold" onClick={handleSave} loading={saving}>Salvar</Btn>
+          </div>
+        ) : (
+          <Btn variant="gold" onClick={() => setIsEditing(true)}>Editar</Btn>
+        )}
+      </div>
 
       <div className="space-y-6">
         {/* Cliente */}
@@ -97,6 +123,7 @@ export default function ContratoDetailPage({
           <ClienteSelector
             value={contrato.clienteId}
             onChange={(id) => set("clienteId", id)}
+            disabled={dis}
           />
         </section>
 
@@ -114,7 +141,8 @@ export default function ContratoDetailPage({
                 type="text"
                 value={contrato.titulo}
                 onChange={(e) => set("titulo", e.target.value)}
-                className="w-full border border-st-border rounded-lg px-3 py-2 text-sm font-sans focus:outline-none focus:border-st-gold"
+                disabled={dis}
+                className={inputClass}
               />
             </div>
             <div>
@@ -124,7 +152,8 @@ export default function ContratoDetailPage({
               <select
                 value={contrato.objeto}
                 onChange={(e) => set("objeto", e.target.value)}
-                className="w-full border border-st-border rounded-lg px-3 py-2 text-sm font-sans focus:outline-none focus:border-st-gold bg-white"
+                disabled={dis}
+                className={selectClass}
               >
                 <option value="">Selecione...</option>
                 {CONTRATO_OBJETOS.map((o) => (
@@ -145,7 +174,8 @@ export default function ContratoDetailPage({
                 onChange={(e) =>
                   set("valor", e.target.value ? parseFloat(e.target.value) : null)
                 }
-                className="w-full border border-st-border rounded-lg px-3 py-2 text-sm font-sans focus:outline-none focus:border-st-gold"
+                disabled={dis}
+                className={inputClass}
               />
             </div>
             <div>
@@ -162,7 +192,8 @@ export default function ContratoDetailPage({
                     (parseFloat(e.target.value) || 0) / 100
                   )
                 }
-                className="w-full border border-st-border rounded-lg px-3 py-2 text-sm font-sans focus:outline-none focus:border-st-gold"
+                disabled={dis}
+                className={inputClass}
                 placeholder="20"
               />
             </div>
@@ -183,7 +214,8 @@ export default function ContratoDetailPage({
                 type="date"
                 value={contrato.dataEntrada || ""}
                 onChange={(e) => set("dataEntrada", e.target.value || null)}
-                className="w-full border border-st-border rounded-lg px-3 py-2 text-sm font-sans focus:outline-none focus:border-st-gold"
+                disabled={dis}
+                className={inputClass}
               />
             </div>
             <div>
@@ -194,7 +226,8 @@ export default function ContratoDetailPage({
                 type="date"
                 value={contrato.vigencia || ""}
                 onChange={(e) => set("vigencia", e.target.value || null)}
-                className="w-full border border-st-border rounded-lg px-3 py-2 text-sm font-sans focus:outline-none focus:border-st-gold"
+                disabled={dis}
+                className={inputClass}
               />
             </div>
             <div>
@@ -204,7 +237,8 @@ export default function ContratoDetailPage({
               <select
                 value={contrato.status}
                 onChange={(e) => set("status", e.target.value as ContratoStatus)}
-                className="w-full border border-st-border rounded-lg px-3 py-2 text-sm font-sans focus:outline-none focus:border-st-gold bg-white"
+                disabled={dis}
+                className={selectClass}
               >
                 {Object.entries(CONTRATO_STATUS_LABELS).map(([k, v]) => (
                   <option key={k} value={k}>
@@ -250,13 +284,6 @@ export default function ContratoDetailPage({
             </div>
           </section>
         )}
-
-        {/* Salvar */}
-        <div className="flex justify-end">
-          <Btn variant="gold" onClick={handleSave} loading={saving}>
-            Salvar Contrato
-          </Btn>
-        </div>
       </div>
     </div>
   );

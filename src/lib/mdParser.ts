@@ -6,7 +6,8 @@ export type BlockToken =
   | { type: "quote"; text: string }
   | { type: "codeBlock"; text: string }
   | { type: "hr" }
-  | { type: "labelValue"; label: string; value: string };
+  | { type: "labelValue"; label: string; value: string }
+  | { type: "table"; headers: string[]; rows: string[][] };
 
 export function parseMarkdown(input: string): BlockToken[] {
   const lines = input.split("\n");
@@ -88,6 +89,36 @@ export function parseMarkdown(input: string): BlockToken[] {
       continue;
     }
 
+    // Table — pipe-delimited rows
+    if (trimmed.startsWith("|") && trimmed.includes("|", 1)) {
+      const tableLines: string[] = [];
+      while (
+        i < lines.length &&
+        lines[i].trimEnd().startsWith("|") &&
+        lines[i].trimEnd().includes("|", 1)
+      ) {
+        tableLines.push(lines[i].trimEnd());
+        i++;
+      }
+      if (tableLines.length >= 2) {
+        const headers = tableLines[0]
+          .split("|")
+          .filter((c) => c.trim())
+          .map((c) => c.trim());
+        // Skip separator row (|---|---|)
+        const isSep = (l: string) => /^\|[\s\-:|]+\|$/.test(l);
+        const startRow = isSep(tableLines[1]) ? 2 : 1;
+        const rows = tableLines.slice(startRow).map((line) =>
+          line
+            .split("|")
+            .filter((c) => c.trim())
+            .map((c) => c.trim())
+        );
+        tokens.push({ type: "table", headers, rows });
+      }
+      continue;
+    }
+
     // Label: Value pattern (e.g., **Nome**: João)
     const labelMatch = trimmed.match(/^\*\*(.+?)\*\*:\s*(.+)$/);
     if (labelMatch) {
@@ -108,6 +139,7 @@ export function parseMarkdown(input: string): BlockToken[] {
       !lines[i].trimEnd().startsWith("#") &&
       !lines[i].trimEnd().startsWith("```") &&
       !lines[i].trimEnd().startsWith("> ") &&
+      !lines[i].trimEnd().startsWith("|") &&
       !/^[\s]*[-*]\s+/.test(lines[i]) &&
       !/^[\s]*\d+[.)]\s+/.test(lines[i]) &&
       !/^(---|___|\*\*\*|─{3,})\s*$/.test(lines[i].trimEnd())

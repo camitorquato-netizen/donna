@@ -67,7 +67,7 @@ export default function NovaPastaPage() {
         </Btn>
       </div>
 
-      <TabGeral pasta={pasta} onChange={set} />
+      <TabGeral pasta={pasta} onChange={set} isEditing={true} />
     </div>
   );
 }

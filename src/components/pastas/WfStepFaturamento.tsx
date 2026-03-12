@@ -33,20 +33,20 @@ export default function WfStepFaturamento({ step, onAdvance }: Props) {
     <div className="space-y-4">
       <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3">
         <p className="text-xs font-sans text-indigo-800">
-          Etapa final — faturamento do crédito. Documente e conclua o workflow.
+          Etapa final — conclusão do crédito. Documente e conclua o workflow.
         </p>
       </div>
 
       <div className="grid grid-cols-1 gap-3">
         <div>
-          <label className="block text-xs font-sans text-st-muted mb-1">Observações do Faturamento</label>
+          <label className="block text-xs font-sans text-st-muted mb-1">Observações</label>
           <textarea
             value={obs}
             onChange={(e) => setObs(e.target.value)}
             onBlur={saveStepFields}
             disabled={isDone}
             rows={6}
-            placeholder="Notas sobre o faturamento..."
+            placeholder="Notas sobre a conclusão..."
             className="w-full border border-st-border rounded-lg px-3 py-2 text-sm font-sans focus:outline-none focus:border-st-gold resize-none disabled:opacity-60 disabled:bg-gray-50"
           />
         </div>

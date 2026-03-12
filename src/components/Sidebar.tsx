@@ -15,8 +15,10 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Contratos", href: "/contratos", icon: "◑" },
   { label: "Pastas", href: "/pastas", icon: "◫" },
   { label: "Financeiro", href: "/financeiro", icon: "◆" },
-  { label: "Radiografia", href: "/radiografia", icon: "⚡" },
-  { label: "Casos IA", href: "/casos", icon: "▸" },
+  { label: "Usuários", href: "/usuarios", icon: "◉" },
+  { label: "Workflow RCT", href: "/workflow-rct", icon: "⚙" },
+  { label: "Piloto RCT", href: "/radiografia", icon: "⚡" },
+  { label: "Piloto Patrimonial", href: "/casos", icon: "▸" },
 ];
 
 interface SidebarProps {

@@ -1,26 +1,26 @@
 "use client";
-import { WfRct, WF_RCT_TAREFA_LABELS, WfRctTarefa } from "@/lib/types";
+import { WfPlanejamento } from "@/lib/types";
 
-interface WorkflowStepsProps {
-  steps: WfRct[];
+interface WorkflowStepsPlanejamentoProps {
+  steps: WfPlanejamento[];
   activeIndex: number;
   onStepClick: (index: number) => void;
 }
 
 const STEP_LABELS: string[] = [
-  "Levantamento",
-  "Revisão",
+  "Onboarding",
+  "Coleta",
+  "Diagnóstico",
+  "Cenários",
   "Apresentação",
-  "Retificações",
-  "Compensações",
-  "Findo",
+  "Implementação",
 ];
 
-export default function WorkflowSteps({
+export default function WorkflowStepsPlanejamento({
   steps,
   activeIndex,
   onStepClick,
-}: WorkflowStepsProps) {
+}: WorkflowStepsPlanejamentoProps) {
   return (
     <div className="flex items-center justify-center gap-0 w-full overflow-x-auto py-4 px-1">
       {steps.map((step, i) => {
@@ -53,7 +53,7 @@ export default function WorkflowSteps({
                     : "text-st-muted"
                 }`}
               >
-                {STEP_LABELS[i] || WF_RCT_TAREFA_LABELS[step.tarefa as WfRctTarefa]}
+                {STEP_LABELS[i]}
               </span>
               {active && (
                 <span className="sm:hidden text-[9px] font-sans mt-1 text-center text-st-gold font-bold leading-tight max-w-[50px] truncate">

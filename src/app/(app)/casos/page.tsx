@@ -69,16 +69,16 @@ export default function CasosPage() {
       <div className="flex items-center justify-between mb-6 sm:mb-8 gap-3">
         <div>
           <h1 className="font-serif text-xl sm:text-2xl font-bold text-st-dark">
-            Casos IA
+            Piloto Patrimonial
           </h1>
           <p className="text-xs sm:text-sm text-st-muted font-sans mt-1">
             {loadingCases
               ? "Carregando..."
-              : `${cases.length} caso${cases.length !== 1 ? "s" : ""}`}
+              : `${cases.length} piloto${cases.length !== 1 ? "s" : ""}`}
           </p>
         </div>
         <Btn variant="gold" onClick={handleNewCase}>
-          + Novo Caso
+          + Novo Piloto
         </Btn>
       </div>
 
@@ -100,9 +100,9 @@ export default function CasosPage() {
         </div>
       ) : cases.length === 0 ? (
         <EmptyState
-          title="Nenhum caso ainda"
-          description='Clique em "Novo Caso" para iniciar sua primeira análise patrimonial.'
-          actionLabel="+ Criar Primeiro Caso"
+          title="Nenhum piloto ainda"
+          description='Clique em "Novo Piloto" para iniciar sua primeira análise patrimonial.'
+          actionLabel="+ Criar Primeiro Piloto"
           onAction={handleNewCase}
         />
       ) : (

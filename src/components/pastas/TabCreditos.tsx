@@ -1,36 +1,45 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { Credito, CREDITO_FASE_LABELS, CreditoFase } from "@/lib/types";
-import { getCreditosByPasta, deleteCredito } from "@/lib/store";
+import { Credito, WfRct, WF_RCT_TAREFA_LABELS, WfRctTarefa } from "@/lib/types";
+import { getCreditosByPasta, deleteCredito, getWfRctByCredito } from "@/lib/store";
 import Btn from "@/components/Btn";
 import Badge from "@/components/Badge";
 import CreditoModal from "./CreditoModal";
 
 interface TabCreditosProps {
   pastaId: string;
+  autoCreditoId?: string | null;
 }
 
-const faseColors: Record<string, "gold" | "green" | "muted" | "dark" | "red"> = {
-  "1_analise": "muted",
-  "2_parecer": "gold",
-  "3_apresentacao": "gold",
-  "4_aguardando_aprovacao": "gold",
-  "5_utilizacao": "green",
-  "6_findo": "dark",
-  nao_autorizado: "red",
-  extinto: "muted",
-};
+/** Retorna a etiqueta do workflow: tarefa atual (primeira pendente) */
+function getWorkflowLabel(steps: WfRct[]): { label: string; done: boolean } {
+  if (steps.length === 0) return { label: "", done: false };
+  const pendente = steps.find((s) => s.status === "pendente");
+  if (!pendente) return { label: "Concluído", done: true };
+  return { label: WF_RCT_TAREFA_LABELS[pendente.tarefa as WfRctTarefa] || pendente.tarefa, done: false };
+}
 
-export default function TabCreditos({ pastaId }: TabCreditosProps) {
+export default function TabCreditos({ pastaId, autoCreditoId }: TabCreditosProps) {
   const [creditos, setCreditos] = useState<Credito[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<Credito | null | "new">(null);
+  const [wfLabels, setWfLabels] = useState<Record<string, { label: string; done: boolean }>>({});
+  const [autoOpened, setAutoOpened] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const data = await getCreditosByPasta(pastaId);
       setCreditos(data);
+      // Carregar posição do workflow para cada crédito
+      const labels: Record<string, { label: string; done: boolean }> = {};
+      await Promise.all(
+        data.map(async (c) => {
+          const steps = await getWfRctByCredito(c.id);
+          labels[c.id] = getWorkflowLabel(steps);
+        })
+      );
+      setWfLabels(labels);
     } catch (err) {
       console.error("[TabCreditos] Erro:", err);
     } finally {
@@ -42,7 +51,19 @@ export default function TabCreditos({ pastaId }: TabCreditosProps) {
     load();
   }, [load]);
 
+  // Auto-abrir modal do crédito quando vem do Workflow RCT
+  useEffect(() => {
+    if (autoCreditoId && !autoOpened && creditos.length > 0 && !loading) {
+      const found = creditos.find((c) => c.id === autoCreditoId);
+      if (found) {
+        setModal(found);
+        setAutoOpened(true);
+      }
+    }
+  }, [autoCreditoId, autoOpened, creditos, loading]);
+
   async function handleDelete(id: string) {
+    if (!confirm("Tem certeza que deseja excluir este crédito e todos os dados vinculados (workflow, pontos, compensações)?")) return;
     await deleteCredito(id);
     setCreditos((prev) => prev.filter((c) => c.id !== id));
   }
@@ -108,51 +129,61 @@ export default function TabCreditos({ pastaId }: TabCreditosProps) {
         </div>
       ) : (
         <div className="space-y-3">
-          {creditos.map((c) => (
-            <div
-              key={c.id}
-              className="bg-white border border-st-border rounded-xl p-4 hover:shadow-sm transition-shadow"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <h3 className="font-serif font-bold text-sm text-st-dark">
-                      {c.titulo}
-                    </h3>
-                    <Badge color="dark">{c.tributo}</Badge>
-                    <Badge color={faseColors[c.fase] || "muted"}>
-                      {CREDITO_FASE_LABELS[c.fase as CreditoFase] || c.fase}
-                    </Badge>
+          {creditos.map((c) => {
+            const wf = wfLabels[c.id];
+            return (
+              <div
+                key={c.id}
+                className="bg-white border border-st-border rounded-xl p-4 hover:shadow-sm transition-shadow"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <h3 className="font-serif font-bold text-sm text-st-dark">
+                        {c.titulo}
+                      </h3>
+                      <Badge color="dark">{c.tributo}</Badge>
+                      {wf && wf.label && (
+                        <Badge color={wf.done ? "green" : "gold"}>
+                          {wf.label}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex gap-4 text-xs text-st-muted font-sans flex-wrap">
+                      <span>
+                        Apresentado: <strong>{formatBRL(c.creditoApresentado)}</strong>
+                      </span>
+                      <span>
+                        Validado: <strong className="text-st-green">{formatBRL(c.creditoValidado)}</strong>
+                      </span>
+                      <span>
+                        Saldo: <strong className="text-st-gold">{formatBRL(c.saldo)}</strong>
+                      </span>
+                      {c.createdAt && (
+                        <span>
+                          {new Date(c.createdAt).toLocaleDateString("pt-BR")}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex gap-4 text-xs text-st-muted font-sans flex-wrap">
-                    <span>
-                      Apresentado: <strong>{formatBRL(c.creditoApresentado)}</strong>
-                    </span>
-                    <span>
-                      Validado: <strong className="text-st-green">{formatBRL(c.creditoValidado)}</strong>
-                    </span>
-                    <span>
-                      Saldo: <strong className="text-st-gold">{formatBRL(c.saldo)}</strong>
-                    </span>
+                  <div className="flex gap-1 shrink-0">
+                    <button
+                      onClick={() => setModal(c)}
+                      className="text-xs text-st-muted hover:text-st-gold font-sans cursor-pointer px-2 py-1"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => handleDelete(c.id)}
+                      className="text-xs text-st-muted hover:text-st-red font-sans cursor-pointer px-2 py-1"
+                    >
+                      ×
+                    </button>
                   </div>
-                </div>
-                <div className="flex gap-1 shrink-0">
-                  <button
-                    onClick={() => setModal(c)}
-                    className="text-xs text-st-muted hover:text-st-gold font-sans cursor-pointer px-2 py-1"
-                  >
-                    Editar
-                  </button>
-                  <button
-                    onClick={() => handleDelete(c.id)}
-                    className="text-xs text-st-muted hover:text-st-red font-sans cursor-pointer px-2 py-1"
-                  >
-                    ×
-                  </button>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

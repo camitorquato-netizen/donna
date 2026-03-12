@@ -25,8 +25,93 @@ import {
   PublicacaoStatus,
   Ponto,
   PontoStatusCliente,
+  PilotoRct,
+  Usuario,
+  UsuarioPermissao,
+  CreditoView,
+  WfPlanejamento,
+  WfPlanejamentoTarefa,
 } from "./types";
 import { supabase } from "./supabase";
+
+/* ------------------------------------------------------------------ */
+/*  Usuarios                                                           */
+/* ------------------------------------------------------------------ */
+
+interface UsuarioRow {
+  id: string;
+  nome: string;
+  email: string;
+  cargo: string;
+  permissao: string;
+  foto_url: string;
+  ativo: boolean;
+  created_at?: string;
+}
+
+function rowToUsuario(r: UsuarioRow): Usuario {
+  return {
+    id: r.id,
+    nome: r.nome || "",
+    email: r.email || "",
+    cargo: r.cargo || "",
+    permissao: (r.permissao as UsuarioPermissao) || "restrita",
+    fotoUrl: r.foto_url || "",
+    ativo: r.ativo ?? true,
+    createdAt: r.created_at,
+  };
+}
+
+function usuarioToRow(u: Usuario): Omit<UsuarioRow, "created_at"> {
+  return {
+    id: u.id,
+    nome: u.nome,
+    email: u.email,
+    cargo: u.cargo || "",
+    permissao: u.permissao || "restrita",
+    foto_url: u.fotoUrl || "",
+    ativo: u.ativo,
+  };
+}
+
+export async function getAllUsuarios(onlyActive = true): Promise<Usuario[]> {
+  let query = supabase
+    .from("usuarios")
+    .select("*")
+    .order("nome", { ascending: true });
+  if (onlyActive) query = query.eq("ativo", true);
+  const { data, error } = await query;
+  if (error) {
+    console.error("[Store] Erro ao carregar usuarios:", error);
+    return [];
+  }
+  return (data || []).map((r) => rowToUsuario(r as UsuarioRow));
+}
+
+export async function getUsuario(id: string): Promise<Usuario | null> {
+  const { data, error } = await supabase
+    .from("usuarios")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) {
+    console.error("[Store] Erro ao carregar usuario:", error);
+    return null;
+  }
+  return data ? rowToUsuario(data as UsuarioRow) : null;
+}
+
+export async function saveUsuario(u: Usuario): Promise<void> {
+  const { error } = await supabase
+    .from("usuarios")
+    .upsert(usuarioToRow(u), { onConflict: "id" });
+  if (error) console.error("[Store] Erro ao salvar usuario:", error);
+}
+
+export async function deleteUsuario(id: string): Promise<void> {
+  const { error } = await supabase.from("usuarios").delete().eq("id", id);
+  if (error) console.error("[Store] Erro ao excluir usuario:", error);
+}
 
 /* ------------------------------------------------------------------ */
 /*  Mapeamento Case ↔ Row (banco Supabase)                           */
@@ -1040,8 +1125,66 @@ export async function saveCredito(c: Credito): Promise<void> {
 }
 
 export async function deleteCredito(id: string): Promise<void> {
+  // Deletar dependências na ordem correta (FK constraints)
+  await supabase.from("pontos").delete().eq("credito_id", id);
+  await supabase.from("controle_rct").delete().eq("credito_id", id);
+  await supabase.from("wf_rct").delete().eq("credito_id", id);
+  // Limpar referências nullable
+  await supabase.from("financeiro").update({ credito_id: null }).eq("credito_id", id);
+  await supabase.from("documentos").update({ credito_id: null }).eq("credito_id", id);
+  // Deletar o crédito
   const { error } = await supabase.from("creditos").delete().eq("id", id);
   if (error) console.error("[Store] Erro excluir credito:", error);
+}
+
+export async function getAllCreditosView(): Promise<CreditoView[]> {
+  const { data, error } = await supabase
+    .from("creditos")
+    .select("id, titulo, tributo, fase, credito_apresentado, credito_validado, saldo, created_at, pasta_id, pastas(titulo, numero, clientes(nome)), usuarios(nome)")
+    .order("created_at", { ascending: false });
+  if (error) {
+    console.error("[Store] Erro ao carregar creditos view:", error);
+    // Fallback: tentar via v_creditos (sem pasta_id)
+    const { data: vData, error: vErr } = await supabase
+      .from("v_creditos")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (vErr) {
+      console.error("[Store] Fallback v_creditos também falhou:", vErr);
+      return [];
+    }
+    return (vData || []).map((r: Record<string, unknown>) => ({
+      id: r.id as string,
+      titulo: (r.titulo as string) || "",
+      tributo: (r.tributo as string) || "",
+      fase: (r.fase as string) || "1_analise",
+      creditoApresentado: (r.credito_apresentado as number) || 0,
+      creditoValidado: (r.credito_validado as number) || 0,
+      saldo: (r.saldo as number) || 0,
+      createdAt: (r.created_at as string) || "",
+      pastaTitulo: (r.pasta_titulo as string) || "",
+      pastaNumero: (r.pasta_numero as string) || "",
+      pastaId: "",
+      clienteNome: (r.cliente_nome as string) || "",
+      responsavelNome: (r.responsavel_nome as string) || "",
+    })) as CreditoView[];
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data || []).map((r: any) => ({
+    id: r.id as string,
+    titulo: (r.titulo as string) || "",
+    tributo: (r.tributo as string) || "",
+    fase: (r.fase as string) || "1_analise",
+    creditoApresentado: (r.credito_apresentado as number) || 0,
+    creditoValidado: (r.credito_validado as number) || 0,
+    saldo: (r.saldo as number) || 0,
+    createdAt: (r.created_at as string) || "",
+    pastaTitulo: r.pastas?.titulo || "",
+    pastaNumero: r.pastas?.numero || "",
+    pastaId: (r.pasta_id as string) || "",
+    clienteNome: r.pastas?.clientes?.nome || "",
+    responsavelNome: r.usuarios?.nome || "",
+  })) as CreditoView[];
 }
 
 /* ------------------------------------------------------------------ */
@@ -1116,6 +1259,91 @@ export async function initWfRctForCredito(creditoId: string): Promise<void> {
   }));
   const { error } = await supabase.from("wf_rct").insert(rows);
   if (error) console.error("[Store] Erro init wf_rct:", error);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Mapeamento WfPlanejamento ↔ Row                                     */
+/* ------------------------------------------------------------------ */
+
+interface WfPlanejamentoRow {
+  id: string;
+  pasta_id: string;
+  tarefa: string;
+  responsavel_id: string | null;
+  status: string;
+  url: string;
+  prompt: string;
+  observacoes: string;
+  prazo: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+function wfPlanejamentoToRow(
+  w: WfPlanejamento
+): Omit<WfPlanejamentoRow, "created_at" | "updated_at"> {
+  return {
+    id: w.id,
+    pasta_id: w.pastaId,
+    tarefa: w.tarefa,
+    responsavel_id: w.responsavelId || null,
+    status: w.status || "pendente",
+    url: w.url || "",
+    prompt: w.prompt || "",
+    observacoes: w.observacoes || "",
+    prazo: w.prazo || null,
+  };
+}
+
+function rowToWfPlanejamento(r: WfPlanejamentoRow): WfPlanejamento {
+  return {
+    id: r.id,
+    pastaId: r.pasta_id,
+    tarefa: r.tarefa as WfPlanejamentoTarefa,
+    responsavelId: r.responsavel_id || undefined,
+    status: (r.status as WfPlanejamento["status"]) || "pendente",
+    url: r.url || "",
+    prompt: r.prompt || "",
+    observacoes: r.observacoes || "",
+    prazo: r.prazo || null,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  };
+}
+
+export async function getWfPlanejamentoByPasta(pastaId: string): Promise<WfPlanejamento[]> {
+  const { data, error } = await supabase
+    .from("wf_planejamento")
+    .select("*")
+    .eq("pasta_id", pastaId)
+    .order("tarefa", { ascending: true });
+  if (error) { console.error("[Store] Erro wf_planejamento:", error); return []; }
+  return (data || []).map((r) => rowToWfPlanejamento(r as WfPlanejamentoRow));
+}
+
+export async function saveWfPlanejamento(w: WfPlanejamento): Promise<void> {
+  const { error } = await supabase
+    .from("wf_planejamento")
+    .upsert(wfPlanejamentoToRow(w), { onConflict: "id" });
+  if (error) console.error("[Store] Erro salvar wf_planejamento:", error);
+}
+
+export async function initWfPlanejamentoForPasta(pastaId: string): Promise<void> {
+  const tarefas: WfPlanejamentoTarefa[] = [
+    "1_onboarding", "2_coleta_documental", "3_diagnostico",
+    "4_cenarios", "5_apresentacao", "6_implementacao",
+  ];
+  const rows = tarefas.map((t) => ({
+    id: crypto.randomUUID(),
+    pasta_id: pastaId,
+    tarefa: t,
+    status: "pendente",
+    url: "",
+    prompt: "",
+    observacoes: "",
+  }));
+  const { error } = await supabase.from("wf_planejamento").insert(rows);
+  if (error) console.error("[Store] Erro init wf_planejamento:", error);
 }
 
 /* ------------------------------------------------------------------ */
@@ -1476,6 +1704,82 @@ export async function getPublicacoesByPasta(pastaId: string): Promise<Publicacao
 export async function savePublicacao(p: Publicacao): Promise<void> {
   const { error } = await supabase.from("publicacoes").upsert(publicacaoToRow(p), { onConflict: "id" });
   if (error) console.error("[Store] Erro salvar publicacao:", error);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Lançamentos por Pasta                                              */
+/* ------------------------------------------------------------------ */
+
+/* ------------------------------------------------------------------ */
+/*  Piloto RCT — Histórico de análises fiscais                         */
+/* ------------------------------------------------------------------ */
+
+interface PilotoRctRow {
+  id: string;
+  cliente_nome: string;
+  cliente_cnpj: string;
+  arquivos_info: unknown;
+  resultado: string;
+  created_at: string;
+}
+
+function pilotoRctToRow(p: PilotoRct): PilotoRctRow {
+  return {
+    id: p.id,
+    cliente_nome: p.clienteNome,
+    cliente_cnpj: p.clienteCnpj,
+    arquivos_info: p.arquivosInfo,
+    resultado: p.resultado,
+    created_at: p.createdAt,
+  };
+}
+
+function rowToPilotoRct(r: PilotoRctRow): PilotoRct {
+  return {
+    id: r.id,
+    clienteNome: r.cliente_nome,
+    clienteCnpj: r.cliente_cnpj,
+    arquivosInfo: (r.arquivos_info as PilotoRct["arquivosInfo"]) || [],
+    resultado: r.resultado || "",
+    createdAt: r.created_at,
+  };
+}
+
+export async function getAllPilotosRct(): Promise<PilotoRct[]> {
+  const { data, error } = await supabase
+    .from("pilotos_rct")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) {
+    console.error("[Store] Erro ao carregar pilotos RCT:", error);
+    return [];
+  }
+  return (data || []).map((r) => rowToPilotoRct(r as PilotoRctRow));
+}
+
+export async function getPilotoRct(id: string): Promise<PilotoRct | null> {
+  const { data, error } = await supabase
+    .from("pilotos_rct")
+    .select("*")
+    .eq("id", id)
+    .single();
+  if (error) {
+    console.error("[Store] Erro ao carregar piloto RCT:", error);
+    return null;
+  }
+  return data ? rowToPilotoRct(data as PilotoRctRow) : null;
+}
+
+export async function savePilotoRct(p: PilotoRct): Promise<void> {
+  const { error } = await supabase
+    .from("pilotos_rct")
+    .upsert(pilotoRctToRow(p), { onConflict: "id" });
+  if (error) console.error("[Store] Erro ao salvar piloto RCT:", error);
+}
+
+export async function deletePilotoRct(id: string): Promise<void> {
+  const { error } = await supabase.from("pilotos_rct").delete().eq("id", id);
+  if (error) console.error("[Store] Erro ao excluir piloto RCT:", error);
 }
 
 /* ------------------------------------------------------------------ */

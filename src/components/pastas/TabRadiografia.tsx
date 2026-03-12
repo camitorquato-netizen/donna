@@ -5,12 +5,17 @@ import { callAnthropic } from "@/lib/api";
 import { P_SPED_RADIOGRAFIA } from "@/lib/prompts";
 import Btn from "@/components/Btn";
 import Md from "@/components/Md";
+import { downloadDocx } from "@/lib/docxExport";
+import { savePilotoRct } from "@/lib/store";
+import type { PilotoRct } from "@/lib/types";
 
 interface TabRadiografiaProps {
   /** Opcional — quando usado dentro de uma pasta */
   pastaId?: string;
   clienteNome?: string;
   clienteCnpj?: string;
+  /** Callback chamado após salvar no banco */
+  onSaved?: (id: string) => void;
 }
 
 interface ArquivoSped {
@@ -22,6 +27,7 @@ interface ArquivoSped {
 export default function TabRadiografia({
   clienteNome,
   clienteCnpj,
+  onSaved,
 }: TabRadiografiaProps) {
   const [arquivos, setArquivos] = useState<ArquivoSped[]>([]);
   const [nomeCliente, setNomeCliente] = useState(clienteNome || "");
@@ -156,7 +162,7 @@ ${textoConsolidado}
 
 ---
 
-Analise os registros acima e gere a Radiografia Fiscal completa conforme instruções do system prompt.`;
+Analise os registros acima e gere a análise fiscal completa (Piloto RCT) conforme instruções do system prompt.`;
 
       const text = await callAnthropic(
         P_SPED_RADIOGRAFIA(),
@@ -165,6 +171,22 @@ Analise os registros acima e gere a Radiografia Fiscal completa conforme instru�
         8000
       );
       setResultado(text);
+
+      // Auto-save no banco
+      const pilotoId = crypto.randomUUID();
+      const piloto: PilotoRct = {
+        id: pilotoId,
+        clienteNome: clienteLabel,
+        clienteCnpj: cnpjLabel === "Extrair do SPED" ? "" : cnpjLabel,
+        arquivosInfo: resumos.map((r) => ({
+          filename: r.tipo,
+          tipo: r.tipo,
+          periodo: r.periodo || "",
+        })),
+        resultado: text,
+        createdAt: new Date().toISOString(),
+      };
+      savePilotoRct(piloto).then(() => onSaved?.(pilotoId));
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Erro desconhecido.";
       setError(msg);
@@ -192,8 +214,8 @@ Analise os registros acima e gere a Radiografia Fiscal completa conforme instru�
       <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
         <p className="text-xs font-sans text-amber-800">
           Faça upload dos arquivos SPED do cliente (.txt) para gerar uma
-          radiografia fiscal automática com pré-análise de oportunidades de
-          crédito tributário. Ideal para triagem antes de abrir um caso RCT.
+          análise fiscal automática com pré-análise de oportunidades de
+          crédito tributário (Piloto RCT).
         </p>
       </div>
 
@@ -313,7 +335,7 @@ Analise os registros acima e gere a Radiografia Fiscal completa conforme instru�
             loading={loading}
             className="!px-6"
           >
-            {loading ? "Analisando SPEDs..." : "Gerar Radiografia →"}
+            {loading ? "Analisando SPEDs..." : "Gerar Piloto RCT →"}
           </Btn>
         </div>
       )}
@@ -341,35 +363,123 @@ Analise os registros acima e gere a Radiografia Fiscal completa conforme instru�
 
       {/* Resultado */}
       {resultado && !loading && (
-        <div className="bg-white border border-st-border rounded-xl p-4 sm:p-6">
-          <div className="flex items-center justify-between mb-4 pb-3 border-b border-st-border">
-            <div>
-              <p className="text-xs font-sans font-medium text-st-muted uppercase tracking-wider">
-                Radiografia Fiscal
-              </p>
-              <p className="text-sm font-serif text-st-dark">
-                {nomeCliente || clienteNome || "Cliente"}
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Btn
-                variant="ghost"
-                className="!text-xs !px-3 !py-1"
-                onClick={() => navigator.clipboard?.writeText(resultado)}
-              >
-                Copiar
-              </Btn>
-              <Btn
-                variant="ghost"
-                className="!text-xs !px-3 !py-1"
-                onClick={resetar}
-              >
-                Nova análise
-              </Btn>
-            </div>
-          </div>
+        <div className="space-y-4">
+          {/* Cards de métricas */}
+          {(() => {
+            const receita =
+              resultado.match(
+                /[Rr]eceita\s+[Bb]ruta[^R]*?R\$\s*([\d.,]+)/
+              )?.[1] || null;
+            const carga =
+              resultado.match(
+                /[Cc]arga\s+[Tt]ribut[aá]ria[^R]*?R\$\s*([\d.,]+)/
+              )?.[1] || null;
+            const percentual =
+              resultado.match(
+                /(\d+[.,]\d+)\s*%/
+              )?.[1] || null;
+            const oportunidades = (
+              resultado.match(/[Oo]portunidade/g) || []
+            ).length;
 
-          <Md content={resultado} />
+            const cards = [
+              receita && {
+                label: "Receita Bruta",
+                value: `R$ ${receita}`,
+                color: "text-st-dark",
+              },
+              carga && {
+                label: "Carga Tributária",
+                value: `R$ ${carga}`,
+                color: "text-st-red",
+              },
+              percentual && {
+                label: "% s/ Faturamento",
+                value: `${percentual}%`,
+                color: "text-st-dark",
+              },
+              {
+                label: "Oportunidades",
+                value: String(oportunidades),
+                color: "text-st-green",
+              },
+            ].filter(Boolean) as {
+              label: string;
+              value: string;
+              color: string;
+            }[];
+
+            return cards.length > 0 ? (
+              <div
+                className={`grid gap-3 ${
+                  cards.length <= 2
+                    ? "grid-cols-2"
+                    : "grid-cols-2 sm:grid-cols-4"
+                }`}
+              >
+                {cards.map((c) => (
+                  <div
+                    key={c.label}
+                    className="bg-white border border-st-border rounded-xl p-4 text-center"
+                  >
+                    <p className="text-xs font-sans text-st-muted uppercase tracking-wider">
+                      {c.label}
+                    </p>
+                    <p
+                      className={`text-lg font-serif font-bold mt-1 ${c.color}`}
+                    >
+                      {c.value}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : null;
+          })()}
+
+          {/* Card principal do resultado */}
+          <div className="bg-white border border-st-border rounded-xl p-4 sm:p-6">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-st-border">
+              <div>
+                <p className="text-xs font-sans font-medium text-st-muted uppercase tracking-wider">
+                  Piloto RCT
+                </p>
+                <p className="text-sm font-serif text-st-dark">
+                  {nomeCliente || clienteNome || "Cliente"}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Btn
+                  variant="ghost"
+                  className="!text-xs !px-3 !py-1"
+                  onClick={() => navigator.clipboard?.writeText(resultado)}
+                >
+                  Copiar
+                </Btn>
+                <Btn
+                  variant="ghost"
+                  className="!text-xs !px-3 !py-1"
+                  onClick={() =>
+                    downloadDocx(
+                      resultado,
+                      nomeCliente || clienteNome || "Cliente",
+                      "piloto-rct"
+                    )
+                  }
+                >
+                  Baixar Word
+                </Btn>
+                <Btn
+                  variant="ghost"
+                  className="!text-xs !px-3 !py-1"
+                  onClick={resetar}
+                >
+                  Nova análise
+                </Btn>
+              </div>
+            </div>
+
+            <Md content={resultado} />
+          </div>
         </div>
       )}
     </div>

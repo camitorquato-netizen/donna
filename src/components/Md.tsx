@@ -127,6 +127,46 @@ export default function Md({ content }: MdProps) {
               </p>
             );
 
+          case "table":
+            return (
+              <div
+                key={i}
+                className="overflow-x-auto rounded-lg border border-st-border"
+              >
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-st-dark text-white">
+                      {token.headers.map((h, j) => (
+                        <th
+                          key={j}
+                          className="px-3 py-2 text-left font-sans font-medium text-xs uppercase tracking-wider"
+                        >
+                          <Inline text={h} />
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {token.rows.map((row, j) => (
+                      <tr
+                        key={j}
+                        className={j % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                      >
+                        {row.map((cell, k) => (
+                          <td
+                            key={k}
+                            className="px-3 py-2 text-st-dark/85 border-t border-st-border/50"
+                          >
+                            <Inline text={cell} />
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
+
           default:
             return null;
         }

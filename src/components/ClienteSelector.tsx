@@ -1,19 +1,23 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Cliente } from "@/lib/types";
-import { getAllClientes } from "@/lib/store";
+import { useRouter } from "next/navigation";
+import { Cliente, createEmptyCliente } from "@/lib/types";
+import { getAllClientes, saveCliente } from "@/lib/store";
 
 interface ClienteSelectorProps {
   value: string;
   onChange: (clienteId: string) => void;
   label?: string;
+  disabled?: boolean;
 }
 
 export default function ClienteSelector({
   value,
   onChange,
   label = "Cliente",
+  disabled = false,
 }: ClienteSelectorProps) {
+  const router = useRouter();
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
@@ -28,6 +32,13 @@ export default function ClienteSelector({
 
   const selected = clientes.find((c) => c.id === value);
 
+  async function handleNewCliente() {
+    const id = crypto.randomUUID();
+    const c = createEmptyCliente(id);
+    await saveCliente(c);
+    router.push(`/clientes/${id}`);
+  }
+
   return (
     <div className="relative">
       <label className="block text-xs font-sans text-st-muted mb-1">
@@ -35,13 +46,17 @@ export default function ClienteSelector({
       </label>
       <button
         type="button"
-        onClick={() => setOpen(!open)}
-        className="w-full border border-st-border rounded-lg px-3 py-2 text-sm font-sans text-left bg-white focus:outline-none focus:border-st-gold transition-colors cursor-pointer"
+        onClick={() => !disabled && setOpen(!open)}
+        className={`w-full border border-st-border rounded-lg px-3 py-2 text-sm font-sans text-left bg-white focus:outline-none focus:border-st-gold transition-colors ${
+          disabled
+            ? "opacity-60 bg-st-light cursor-not-allowed"
+            : "cursor-pointer"
+        }`}
       >
         {selected ? selected.nome : "Selecione um cliente..."}
       </button>
 
-      {open && (
+      {open && !disabled && (
         <div className="absolute z-30 top-full left-0 right-0 mt-1 bg-white border border-st-border rounded-lg shadow-lg max-h-60 overflow-auto">
           <div className="sticky top-0 bg-white p-2 border-b border-st-border">
             <input
@@ -78,6 +93,13 @@ export default function ClienteSelector({
               </button>
             ))
           )}
+          <button
+            type="button"
+            onClick={handleNewCliente}
+            className="sticky bottom-0 w-full text-left px-3 py-2.5 text-sm font-sans font-medium text-st-gold hover:bg-st-gold/10 transition-colors cursor-pointer border-t border-st-border bg-white"
+          >
+            + Novo Cliente
+          </button>
         </div>
       )}
     </div>

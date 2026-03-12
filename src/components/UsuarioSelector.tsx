@@ -1,45 +1,37 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Contrato, CONTRATO_STATUS_LABELS, ContratoStatus } from "@/lib/types";
-import { getContratosByCliente, getAllContratos } from "@/lib/store";
+import { Usuario, createEmptyUsuario } from "@/lib/types";
+import { getAllUsuarios, saveUsuario } from "@/lib/store";
 
-interface ContratoSelectorProps {
+interface UsuarioSelectorProps {
   value: string;
-  onChange: (contratoId: string) => void;
-  clienteId?: string;
+  onChange: (id: string) => void;
   label?: string;
   disabled?: boolean;
 }
 
-export default function ContratoSelector({
+export default function UsuarioSelector({
   value,
   onChange,
-  clienteId,
-  label = "Contrato",
+  label = "Responsável",
   disabled = false,
-}: ContratoSelectorProps) {
+}: UsuarioSelectorProps) {
   const router = useRouter();
-  const [contratos, setContratos] = useState<Contrato[]>([]);
-  const [search, setSearch] = useState("");
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    if (clienteId) {
-      getContratosByCliente(clienteId).then(setContratos);
-    } else {
-      getAllContratos().then(setContratos);
-    }
-  }, [clienteId]);
+    getAllUsuarios().then(setUsuarios);
+  }, []);
 
-  const filtered = contratos.filter((c) =>
-    (c.titulo || c.objeto || "").toLowerCase().includes(search.toLowerCase())
-  );
+  const selected = usuarios.find((u) => u.id === value);
 
-  const selected = contratos.find((c) => c.id === value);
-
-  function handleNewContrato() {
-    router.push("/contratos/novo");
+  async function handleNewUsuario() {
+    const id = crypto.randomUUID();
+    const u = createEmptyUsuario(id);
+    await saveUsuario(u);
+    router.push(`/usuarios/${id}`);
   }
 
   return (
@@ -57,67 +49,53 @@ export default function ContratoSelector({
         }`}
       >
         {selected
-          ? selected.titulo || selected.objeto || "Contrato sem título"
-          : "Selecione um contrato..."}
+          ? `${selected.nome}${selected.cargo ? ` — ${selected.cargo}` : ""}`
+          : "Selecione..."}
       </button>
 
       {open && !disabled && (
         <div className="absolute z-30 top-full left-0 right-0 mt-1 bg-white border border-st-border rounded-lg shadow-lg max-h-60 overflow-auto">
-          <div className="sticky top-0 bg-white p-2 border-b border-st-border">
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar contrato..."
-              className="w-full border border-st-border rounded px-2 py-1.5 text-sm font-sans focus:outline-none focus:border-st-gold"
-              autoFocus
-            />
-          </div>
           {/* Opção para desvincular */}
           <button
             type="button"
             onClick={() => {
               onChange("");
               setOpen(false);
-              setSearch("");
             }}
             className="w-full text-left px-3 py-2 text-sm font-sans text-st-muted hover:bg-gray-50 transition-colors cursor-pointer border-b border-st-border"
           >
-            Nenhum contrato
+            Nenhum
           </button>
-          {filtered.length === 0 ? (
+          {usuarios.length === 0 ? (
             <p className="p-3 text-sm text-st-muted font-sans text-center">
-              Nenhum contrato encontrado
+              Nenhum usuário cadastrado
             </p>
           ) : (
-            filtered.map((c) => (
+            usuarios.map((u) => (
               <button
-                key={c.id}
+                key={u.id}
                 type="button"
                 onClick={() => {
-                  onChange(c.id);
+                  onChange(u.id);
                   setOpen(false);
-                  setSearch("");
                 }}
                 className={`w-full text-left px-3 py-2 text-sm font-sans hover:bg-st-gold/10 transition-colors cursor-pointer ${
-                  c.id === value ? "bg-st-gold/10 text-st-gold" : "text-st-dark"
+                  u.id === value ? "bg-st-gold/10 text-st-gold" : "text-st-dark"
                 }`}
               >
-                <span className="font-medium">
-                  {c.titulo || c.objeto || "Sem título"}
-                </span>
-                <span className="text-xs text-st-muted ml-2">
-                  {CONTRATO_STATUS_LABELS[c.status as ContratoStatus] || c.status}
-                </span>
+                <span className="font-medium">{u.nome}</span>
+                {u.cargo && (
+                  <span className="text-xs text-st-muted ml-2">{u.cargo}</span>
+                )}
               </button>
             ))
           )}
           <button
             type="button"
-            onClick={handleNewContrato}
+            onClick={handleNewUsuario}
             className="sticky bottom-0 w-full text-left px-3 py-2.5 text-sm font-sans font-medium text-st-gold hover:bg-st-gold/10 transition-colors cursor-pointer border-t border-st-border bg-white"
           >
-            + Novo Contrato
+            + Novo Usuário
           </button>
         </div>
       )}

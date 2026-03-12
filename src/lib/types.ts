@@ -1,3 +1,38 @@
+/* -- Usuarios -- */
+
+export type UsuarioPermissao = "total" | "restrita" | "somente_leitura";
+
+export const USUARIO_PERMISSAO_LABELS: Record<UsuarioPermissao, string> = {
+  total: "Total",
+  restrita: "Restrita",
+  somente_leitura: "Somente Leitura",
+};
+
+export interface Usuario {
+  id: string;
+  nome: string;
+  email: string;
+  cargo: string;
+  permissao: UsuarioPermissao;
+  fotoUrl: string;
+  ativo: boolean;
+  createdAt?: string;
+}
+
+export function createEmptyUsuario(id: string): Usuario {
+  return {
+    id,
+    nome: "",
+    email: "",
+    cargo: "",
+    permissao: "restrita",
+    fotoUrl: "",
+    ativo: true,
+  };
+}
+
+/* -- Caso IA -- */
+
 export type StageNumber = 1 | 2 | 3 | 4 | 5 | 6;
 
 export interface CaseFile {
@@ -401,6 +436,22 @@ export interface Credito {
   updatedAt?: string;
 }
 
+export interface CreditoView {
+  id: string;
+  titulo: string;
+  tributo: string;
+  fase: CreditoFase;
+  creditoApresentado: number;
+  creditoValidado: number;
+  saldo: number;
+  createdAt: string;
+  pastaTitulo: string;
+  pastaNumero: string;
+  pastaId: string;
+  clienteNome: string;
+  responsavelNome: string;
+}
+
 /* -- Workflow RCT -- */
 
 export type WfRctTarefa =
@@ -417,7 +468,7 @@ export const WF_RCT_TAREFA_LABELS: Record<WfRctTarefa, string> = {
   "3_apresentacao": "Apresentação",
   "4_retificacoes": "Retificações",
   "5_compensacoes": "Compensações",
-  "6_faturamento": "Faturamento",
+  "6_faturamento": "Findo",
 };
 
 export interface WfRct {
@@ -427,6 +478,54 @@ export interface WfRct {
   responsavelId?: string;
   status: "pendente" | "concluido";
   url: string;
+  observacoes: string;
+  prazo: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/* -- Workflow Planejamento Tributário -- */
+
+export type WfPlanejamentoTarefa =
+  | "1_onboarding"
+  | "2_coleta_documental"
+  | "3_diagnostico"
+  | "4_cenarios"
+  | "5_apresentacao"
+  | "6_implementacao";
+
+export const WF_PLANEJAMENTO_TAREFA_LABELS: Record<WfPlanejamentoTarefa, string> = {
+  "1_onboarding": "Onboarding",
+  "2_coleta_documental": "Coleta Documental",
+  "3_diagnostico": "Diagnóstico",
+  "4_cenarios": "Cenários",
+  "5_apresentacao": "Apresentação",
+  "6_implementacao": "Implementação",
+};
+
+export const WF_PLANEJAMENTO_TAREFA_DESCRIPTIONS: Record<WfPlanejamentoTarefa, string> = {
+  "1_onboarding":
+    "Reunião de abertura, apresentação da equipe e metodologia, assinatura de proposta/contrato e NDA, e entrega do checklist de documentos.",
+  "2_coleta_documental":
+    "Recebimento, triagem e organização dos documentos via plataforma segura. Inclui checklist de pendências e follow-up com o cliente.",
+  "3_diagnostico":
+    "Análise da situação atual: regime tributário vigente, folha, faturamento, estrutura societária, contratos relevantes, contingências. Resultado: relatório de diagnóstico interno.",
+  "4_cenarios":
+    "Modelagem dos cenários alternativos com comparativo financeiro, pesquisa legislativa e jurisprudencial, e parecer técnico. Resultado: relatório de cenários.",
+  "5_apresentacao":
+    "Reunião de apresentação ao cliente com os cenários e recomendação fundamentada. Cliente escolhe o cenário, ajustes finais e aprovação formal.",
+  "6_implementacao":
+    "Execução das medidas aprovadas, acompanhamento de obrigações acessórias, alertas de mudanças legislativas e reuniões periódicas de status.",
+};
+
+export interface WfPlanejamento {
+  id: string;
+  pastaId: string;
+  tarefa: WfPlanejamentoTarefa;
+  responsavelId?: string;
+  status: "pendente" | "concluido";
+  url: string;
+  prompt: string;
   observacoes: string;
   prazo: string | null;
   createdAt?: string;
@@ -545,6 +644,7 @@ export type PastaTabKey =
   | "creditos"
   | "radiografia"
   | "workflow"
+  | "workflow_planejamento"
   | "compensacoes"
   | "financeiro";
 
@@ -580,7 +680,16 @@ export function getPastaTabsConfig(
     ];
   }
 
-  // Assessoria, Planejamento Patrimonial/Tributário, Outro
+  if (pasta.tipoServico === "Planejamento Tributário") {
+    return [
+      { key: "geral", label: "Geral" },
+      { key: "workflow_planejamento", label: "Workflow" },
+      { key: "tarefas", label: "Tarefas" },
+      { key: "financeiro", label: "Financeiro" },
+    ];
+  }
+
+  // Assessoria, Planejamento Patrimonial, Outro
   return [
     { key: "geral", label: "Geral" },
     { key: "tarefas", label: "Tarefas" },
@@ -605,6 +714,27 @@ export function createEmptyCliente(id: string): Cliente {
     origem: "",
   };
 }
+
+/* ------------------------------------------------------------------ */
+/*  Piloto RCT — Histórico de análises fiscais                         */
+/* ------------------------------------------------------------------ */
+
+export interface PilotoRctArquivo {
+  filename: string;
+  tipo: string;
+  periodo: string;
+}
+
+export interface PilotoRct {
+  id: string;
+  clienteNome: string;
+  clienteCnpj: string;
+  arquivosInfo: PilotoRctArquivo[];
+  resultado: string;
+  createdAt: string;
+}
+
+/* ------------------------------------------------------------------ */
 
 export function createEmptyCase(id: string): Case {
   return {

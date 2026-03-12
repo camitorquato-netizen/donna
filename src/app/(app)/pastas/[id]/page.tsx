@@ -1,6 +1,6 @@
 "use client";
 import { use, useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Pasta,
   Processo,
@@ -22,6 +22,7 @@ import TabWorkflow from "@/components/pastas/TabWorkflow";
 import TabCompensacoes from "@/components/pastas/TabCompensacoes";
 import TabRadiografia from "@/components/pastas/TabRadiografia";
 import TabFinanceiro from "@/components/pastas/TabFinanceiro";
+import TabWorkflowPlanejamento from "@/components/pastas/TabWorkflowPlanejamento";
 
 const statusColors: Record<string, "gold" | "green" | "muted" | "dark"> = {
   ativo: "green",
@@ -37,11 +38,15 @@ export default function PastaDetailPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab") as PastaTabKey | null;
+  const creditoParam = searchParams.get("credito");
   const [pasta, setPasta] = useState<Pasta | null>(null);
   const [processo, setProcesso] = useState<Processo | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<PastaTabKey>("geral");
+  const [isEditing, setIsEditing] = useState(false);
+  const [activeTab, setActiveTab] = useState<PastaTabKey>(tabParam || "geral");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -72,11 +77,17 @@ export default function PastaDetailPage({
     setSaving(true);
     try {
       await savePasta(pasta);
+      setIsEditing(false);
     } catch (err) {
       console.error("[PastaDetail] Erro ao salvar:", err);
     } finally {
       setSaving(false);
     }
+  }
+
+  async function handleCancel() {
+    await load();
+    setIsEditing(false);
   }
 
   if (loading) {
@@ -116,7 +127,7 @@ export default function PastaDetailPage({
   function renderTabContent() {
     switch (activeTab) {
       case "geral":
-        return <TabGeral pasta={pasta!} onChange={set} />;
+        return <TabGeral pasta={pasta!} onChange={set} isEditing={isEditing} />;
       case "processo":
         return <TabProcesso pastaId={pasta!.id} />;
       case "publicacoes":
@@ -131,9 +142,11 @@ export default function PastaDetailPage({
           />
         );
       case "creditos":
-        return <TabCreditos pastaId={pasta!.id} />;
+        return <TabCreditos pastaId={pasta!.id} autoCreditoId={creditoParam} />;
       case "workflow":
         return <TabWorkflow pastaId={pasta!.id} />;
+      case "workflow_planejamento":
+        return <TabWorkflowPlanejamento pastaId={pasta!.id} />;
       case "compensacoes":
         return (
           <TabCompensacoes
@@ -193,9 +206,14 @@ export default function PastaDetailPage({
             )}
           </div>
           {activeTab === "geral" && (
-            <Btn variant="gold" onClick={handleSave} loading={saving}>
-              Salvar
-            </Btn>
+            isEditing ? (
+              <div className="flex gap-2 shrink-0">
+                <Btn variant="ghost" onClick={handleCancel}>Cancelar</Btn>
+                <Btn variant="gold" onClick={handleSave} loading={saving}>Salvar</Btn>
+              </div>
+            ) : (
+              <Btn variant="gold" onClick={() => setIsEditing(true)}>Editar</Btn>
+            )
           )}
         </div>
       </div>

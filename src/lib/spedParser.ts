@@ -31,11 +31,11 @@ const REGISTROS_EFD_CONTRIBUICOES = new Set([
 ]);
 
 const REGISTROS_EFD_ICMS_IPI = new Set([
-  "0000", "0100", "0150", "0200",
+  "0000", "0100",
   "E100", "E110", "E111", "E116",  // ICMS apuração
   "E200", "E210",                   // ICMS-ST
   "E500", "E510", "E520", "E530",  // IPI apuração
-  "H005", "H010",                   // Inventário
+  "H005",                           // Inventário (header, sem itens)
   "1010",                           // Obrigações do ICMS
 ]);
 

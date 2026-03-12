@@ -12,7 +12,7 @@ function parseInline(text: string): React.ReactNode[] {
   const parts: React.ReactNode[] = [];
   // Combined regex for inline patterns
   const regex =
-    /\[([^\]]+)\]\(([^)]+)\)|\*\*(.+?)\*\*|\*(.+?)\*|`([^`]+)`|\[inferência\]|\[incompleto\]|\[estimativa\]|\[URGENTE\]/g;
+    /\[([^\]]+)\]\(([^)]+)\)|\*\*(.+?)\*\*|\*(.+?)\*|`([^`]+)`|\[inferência\]|\[incompleto\]|\[estimativa\]|\[URGENTE\]|\bBAIXO\b|\bMÉDIO\b|\bMEDIO\b|\bALTO\b/g;
   let lastIndex = 0;
   let match;
   let key = 0;
@@ -85,6 +85,33 @@ function parseInline(text: string): React.ReactNode[] {
           className="inline-block bg-st-red text-white text-xs font-sans font-bold px-1.5 py-0.5 rounded"
         >
           URGENTE
+        </span>
+      );
+    } else if (match[0] === "BAIXO") {
+      parts.push(
+        <span
+          key={key++}
+          className="inline-block bg-st-green/15 text-st-green text-xs font-sans font-bold px-2 py-0.5 rounded"
+        >
+          BAIXO
+        </span>
+      );
+    } else if (match[0] === "MÉDIO" || match[0] === "MEDIO") {
+      parts.push(
+        <span
+          key={key++}
+          className="inline-block bg-st-gold/15 text-st-gold text-xs font-sans font-bold px-2 py-0.5 rounded"
+        >
+          MÉDIO
+        </span>
+      );
+    } else if (match[0] === "ALTO") {
+      parts.push(
+        <span
+          key={key++}
+          className="inline-block bg-st-red/15 text-st-red text-xs font-sans font-bold px-2 py-0.5 rounded"
+        >
+          ALTO
         </span>
       );
     }
