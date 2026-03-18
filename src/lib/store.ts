@@ -31,6 +31,12 @@ import {
   CreditoView,
   WfPlanejamento,
   WfPlanejamentoTarefa,
+  WfPatrimonial,
+  WfPatrimonialTarefa,
+  WfPatrimonialDoc,
+  WfPatrimonialAnalise,
+  WfPatrimonialAnaliseTipo,
+  WfPatrimonialSubtarefa,
 } from "./types";
 import { supabase } from "./supabase";
 
@@ -1344,6 +1350,263 @@ export async function initWfPlanejamentoForPasta(pastaId: string): Promise<void>
   }));
   const { error } = await supabase.from("wf_planejamento").insert(rows);
   if (error) console.error("[Store] Erro init wf_planejamento:", error);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Workflow Patrimonial                                                */
+/* ------------------------------------------------------------------ */
+
+interface WfPatrimonialRow {
+  id: string;
+  pasta_id: string;
+  tarefa: string;
+  responsavel_id: string | null;
+  status: string;
+  url: string;
+  observacoes: string;
+  prazo: string | null;
+  decisao: string;
+  revisoes: number;
+  created_at: string;
+  updated_at: string;
+}
+
+function wfPatrimonialToRow(
+  w: WfPatrimonial
+): Omit<WfPatrimonialRow, "created_at" | "updated_at"> {
+  return {
+    id: w.id,
+    pasta_id: w.pastaId,
+    tarefa: w.tarefa,
+    responsavel_id: w.responsavelId || null,
+    status: w.status || "pendente",
+    url: w.url || "",
+    observacoes: w.observacoes || "",
+    prazo: w.prazo || null,
+    decisao: w.decisao || "",
+    revisoes: w.revisoes || 0,
+  };
+}
+
+function rowToWfPatrimonial(r: WfPatrimonialRow): WfPatrimonial {
+  return {
+    id: r.id,
+    pastaId: r.pasta_id,
+    tarefa: r.tarefa as WfPatrimonialTarefa,
+    responsavelId: r.responsavel_id || undefined,
+    status: (r.status as WfPatrimonial["status"]) || "pendente",
+    url: r.url || "",
+    observacoes: r.observacoes || "",
+    prazo: r.prazo || null,
+    decisao: r.decisao || "",
+    revisoes: r.revisoes || 0,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  };
+}
+
+export async function getWfPatrimonialByPasta(pastaId: string): Promise<WfPatrimonial[]> {
+  const { data, error } = await supabase
+    .from("wf_patrimonial")
+    .select("*")
+    .eq("pasta_id", pastaId)
+    .order("tarefa", { ascending: true });
+  if (error) { console.error("[Store] Erro wf_patrimonial:", error); return []; }
+  return (data || []).map((r) => rowToWfPatrimonial(r as WfPatrimonialRow));
+}
+
+export async function saveWfPatrimonial(w: WfPatrimonial): Promise<void> {
+  const { error } = await supabase
+    .from("wf_patrimonial")
+    .upsert(wfPatrimonialToRow(w), { onConflict: "id" });
+  if (error) console.error("[Store] Erro salvar wf_patrimonial:", error);
+}
+
+export async function initWfPatrimonialForPasta(pastaId: string): Promise<void> {
+  const tarefas: WfPatrimonialTarefa[] = [
+    "1_abertura", "2_onboarding", "3_coleta", "4_analise",
+    "5_consolidacao", "6_devolutiva", "7_gate", "8_execucao",
+    "9_monitoramento",
+  ];
+  const rows = tarefas.map((t) => ({
+    id: crypto.randomUUID(),
+    pasta_id: pastaId,
+    tarefa: t,
+    status: "pendente",
+    url: "",
+    observacoes: "",
+    decisao: "",
+    revisoes: 0,
+  }));
+  const { error } = await supabase.from("wf_patrimonial").insert(rows);
+  if (error) console.error("[Store] Erro init wf_patrimonial:", error);
+
+  // Also create 3 specialist analyses
+  const tipos: WfPatrimonialAnaliseTipo[] = ["tributario", "societario", "familia"];
+  const analiseRows = tipos.map((t) => ({
+    id: crypto.randomUUID(),
+    pasta_id: pastaId,
+    tipo: t,
+    status: "pendente",
+    url: "",
+    observacoes: "",
+  }));
+  const { error: e2 } = await supabase.from("wf_patrimonial_analise").insert(analiseRows);
+  if (e2) console.error("[Store] Erro init wf_patrimonial_analise:", e2);
+}
+
+/* -- Patrimonial Docs (step 3 checklist) -- */
+
+interface WfPatrimonialDocRow {
+  id: string;
+  pasta_id: string;
+  nome: string;
+  status: string;
+  observacoes: string;
+  created_at: string;
+}
+
+export async function getWfPatrimonialDocs(pastaId: string): Promise<WfPatrimonialDoc[]> {
+  const { data, error } = await supabase
+    .from("wf_patrimonial_docs")
+    .select("*")
+    .eq("pasta_id", pastaId)
+    .order("created_at", { ascending: true });
+  if (error) { console.error("[Store] Erro wf_patrimonial_docs:", error); return []; }
+  return (data || []).map((r: WfPatrimonialDocRow) => ({
+    id: r.id,
+    pastaId: r.pasta_id,
+    nome: r.nome,
+    status: r.status as WfPatrimonialDoc["status"],
+    observacoes: r.observacoes || "",
+    createdAt: r.created_at,
+  }));
+}
+
+export async function saveWfPatrimonialDoc(doc: WfPatrimonialDoc): Promise<void> {
+  const { error } = await supabase
+    .from("wf_patrimonial_docs")
+    .upsert({ id: doc.id, pasta_id: doc.pastaId, nome: doc.nome, status: doc.status, observacoes: doc.observacoes }, { onConflict: "id" });
+  if (error) console.error("[Store] Erro salvar wf_patrimonial_docs:", error);
+}
+
+export async function addWfPatrimonialDoc(pastaId: string, nome: string): Promise<WfPatrimonialDoc | null> {
+  const id = crypto.randomUUID();
+  const { error } = await supabase
+    .from("wf_patrimonial_docs")
+    .insert({ id, pasta_id: pastaId, nome, status: "pendente", observacoes: "" });
+  if (error) { console.error("[Store] Erro add wf_patrimonial_docs:", error); return null; }
+  return { id, pastaId, nome, status: "pendente", observacoes: "" };
+}
+
+export async function deleteWfPatrimonialDoc(id: string): Promise<void> {
+  const { error } = await supabase.from("wf_patrimonial_docs").delete().eq("id", id);
+  if (error) console.error("[Store] Erro delete wf_patrimonial_docs:", error);
+}
+
+/* -- Patrimonial Análises (step 4 specialists) -- */
+
+interface WfPatrimonialAnaliseRow {
+  id: string;
+  pasta_id: string;
+  tipo: string;
+  responsavel_id: string | null;
+  status: string;
+  url: string;
+  observacoes: string;
+  prazo: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function getWfPatrimonialAnalises(pastaId: string): Promise<WfPatrimonialAnalise[]> {
+  const { data, error } = await supabase
+    .from("wf_patrimonial_analise")
+    .select("*")
+    .eq("pasta_id", pastaId)
+    .order("tipo", { ascending: true });
+  if (error) { console.error("[Store] Erro wf_patrimonial_analise:", error); return []; }
+  return (data || []).map((r: WfPatrimonialAnaliseRow) => ({
+    id: r.id,
+    pastaId: r.pasta_id,
+    tipo: r.tipo as WfPatrimonialAnaliseTipo,
+    responsavelId: r.responsavel_id || undefined,
+    status: (r.status as WfPatrimonialAnalise["status"]) || "pendente",
+    url: r.url || "",
+    observacoes: r.observacoes || "",
+    prazo: r.prazo || null,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  }));
+}
+
+export async function saveWfPatrimonialAnalise(a: WfPatrimonialAnalise): Promise<void> {
+  const { error } = await supabase
+    .from("wf_patrimonial_analise")
+    .upsert({
+      id: a.id, pasta_id: a.pastaId, tipo: a.tipo,
+      responsavel_id: a.responsavelId || null,
+      status: a.status, url: a.url || "", observacoes: a.observacoes || "",
+      prazo: a.prazo || null,
+    }, { onConflict: "id" });
+  if (error) console.error("[Store] Erro salvar wf_patrimonial_analise:", error);
+}
+
+/* -- Patrimonial Subtarefas (step 8) -- */
+
+interface WfPatrimonialSubtarefaRow {
+  id: string;
+  pasta_id: string;
+  descricao: string;
+  responsavel_id: string | null;
+  status: string;
+  prazo: string | null;
+  observacoes: string;
+  created_at: string;
+}
+
+export async function getWfPatrimonialSubtarefas(pastaId: string): Promise<WfPatrimonialSubtarefa[]> {
+  const { data, error } = await supabase
+    .from("wf_patrimonial_subtarefas")
+    .select("*")
+    .eq("pasta_id", pastaId)
+    .order("created_at", { ascending: true });
+  if (error) { console.error("[Store] Erro wf_patrimonial_subtarefas:", error); return []; }
+  return (data || []).map((r: WfPatrimonialSubtarefaRow) => ({
+    id: r.id,
+    pastaId: r.pasta_id,
+    descricao: r.descricao,
+    responsavelId: r.responsavel_id || undefined,
+    status: (r.status as WfPatrimonialSubtarefa["status"]) || "pendente",
+    prazo: r.prazo || null,
+    observacoes: r.observacoes || "",
+    createdAt: r.created_at,
+  }));
+}
+
+export async function saveWfPatrimonialSubtarefa(s: WfPatrimonialSubtarefa): Promise<void> {
+  const { error } = await supabase
+    .from("wf_patrimonial_subtarefas")
+    .upsert({
+      id: s.id, pasta_id: s.pastaId, descricao: s.descricao,
+      responsavel_id: s.responsavelId || null,
+      status: s.status, prazo: s.prazo || null, observacoes: s.observacoes || "",
+    }, { onConflict: "id" });
+  if (error) console.error("[Store] Erro salvar wf_patrimonial_subtarefas:", error);
+}
+
+export async function addWfPatrimonialSubtarefa(pastaId: string, descricao: string): Promise<WfPatrimonialSubtarefa | null> {
+  const id = crypto.randomUUID();
+  const { error } = await supabase
+    .from("wf_patrimonial_subtarefas")
+    .insert({ id, pasta_id: pastaId, descricao, status: "pendente", observacoes: "" });
+  if (error) { console.error("[Store] Erro add wf_patrimonial_subtarefas:", error); return null; }
+  return { id, pastaId, descricao, status: "pendente", prazo: null, observacoes: "" };
+}
+
+export async function deleteWfPatrimonialSubtarefa(id: string): Promise<void> {
+  const { error } = await supabase.from("wf_patrimonial_subtarefas").delete().eq("id", id);
+  if (error) console.error("[Store] Erro delete wf_patrimonial_subtarefas:", error);
 }
 
 /* ------------------------------------------------------------------ */

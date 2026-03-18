@@ -532,6 +532,108 @@ export interface WfPlanejamento {
   updatedAt?: string;
 }
 
+/* -- Workflow Planejamento Patrimonial -- */
+
+export type WfPatrimonialTarefa =
+  | "1_abertura"
+  | "2_onboarding"
+  | "3_coleta"
+  | "4_analise"
+  | "5_consolidacao"
+  | "6_devolutiva"
+  | "7_gate"
+  | "8_execucao"
+  | "9_monitoramento";
+
+export const WF_PATRIMONIAL_TAREFA_LABELS: Record<WfPatrimonialTarefa, string> = {
+  "1_abertura": "Abertura da Pasta",
+  "2_onboarding": "Onboarding",
+  "3_coleta": "Coleta de Documentos",
+  "4_analise": "Análise Técnica",
+  "5_consolidacao": "Consolidação do Plano",
+  "6_devolutiva": "Reunião Devolutiva",
+  "7_gate": "Aprovação",
+  "8_execucao": "Execução",
+  "9_monitoramento": "Monitoramento",
+};
+
+export const WF_PATRIMONIAL_TAREFA_DESCRIPTIONS: Record<WfPatrimonialTarefa, string> = {
+  "1_abertura":
+    "Registro do cliente e do serviço no Donna. Definição do profissional/equipe responsável, configuração inicial do projeto e envio de e-mail de boas-vindas ao cliente.",
+  "2_onboarding":
+    "A equipe se apresenta ao cliente, revisa o escopo do projeto e explica as etapas. É gerado um checklist personalizado de documentos necessários.",
+  "3_coleta":
+    "Cliente envia os documentos solicitados. A equipe valida a completude e autenticidade. Eventuais pendências são sinalizadas automaticamente.",
+  "4_analise":
+    "Análise técnica simultânea por 3 especialistas: Tributário, Societário e Família/Sucessão. Cada um produz seu parecer independente.",
+  "5_consolidacao":
+    "Os 3 especialistas se reúnem internamente para alinhar suas análises e identificar possíveis conflitos ou sinergias. Resultado: Plano Patrimonial integrado.",
+  "6_devolutiva":
+    "Apresentação do Plano Patrimonial ao cliente. Os especialistas expõem estratégias, justificativas e impactos esperados. Cliente pode sugerir ajustes.",
+  "7_gate":
+    "Gate de aprovação: cliente formaliza a aprovação do plano ou solicita revisões. Gatilho para início da fase de execução.",
+  "8_execucao":
+    "Implementação das estratégias aprovadas: abertura de holdings, doações, alterações contratuais, testamentos, registros em cartório.",
+  "9_monitoramento":
+    "Revisões periódicas do plano (anual ou por evento). Relatórios de acompanhamento enviados ao cliente. Possibilidade de reabrir novas análises.",
+};
+
+export interface WfPatrimonial {
+  id: string;
+  pastaId: string;
+  tarefa: WfPatrimonialTarefa;
+  responsavelId?: string;
+  status: "pendente" | "concluido";
+  url: string;
+  observacoes: string;
+  prazo: string | null;
+  decisao: string;
+  revisoes: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface WfPatrimonialDoc {
+  id: string;
+  pastaId: string;
+  nome: string;
+  status: "pendente" | "recebido" | "validado";
+  observacoes: string;
+  createdAt?: string;
+}
+
+export type WfPatrimonialAnaliseTipo = "tributario" | "societario" | "familia";
+
+export const WF_PATRIMONIAL_ANALISE_LABELS: Record<WfPatrimonialAnaliseTipo, string> = {
+  tributario: "Tributário",
+  societario: "Societário",
+  familia: "Família / Sucessão",
+};
+
+export interface WfPatrimonialAnalise {
+  id: string;
+  pastaId: string;
+  tipo: WfPatrimonialAnaliseTipo;
+  responsavelId?: string;
+  status: "pendente" | "concluido";
+  url: string;
+  observacoes: string;
+  prazo: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface WfPatrimonialSubtarefa {
+  id: string;
+  pastaId: string;
+  descricao: string;
+  responsavelId?: string;
+  status: "pendente" | "concluido";
+  prazo: string | null;
+  observacoes: string;
+  createdAt?: string;
+}
+
 /* -- Pontos de Crédito -- */
 
 export type PontoStatusCliente = "sim" | "nao" | "stand_by";
@@ -645,6 +747,7 @@ export type PastaTabKey =
   | "radiografia"
   | "workflow"
   | "workflow_planejamento"
+  | "workflow_patrimonial"
   | "compensacoes"
   | "financeiro";
 
@@ -689,7 +792,16 @@ export function getPastaTabsConfig(
     ];
   }
 
-  // Assessoria, Planejamento Patrimonial, Outro
+  if (pasta.tipoServico === "Planejamento Patrimonial") {
+    return [
+      { key: "geral", label: "Geral" },
+      { key: "workflow_patrimonial", label: "Workflow" },
+      { key: "tarefas", label: "Tarefas" },
+      { key: "financeiro", label: "Financeiro" },
+    ];
+  }
+
+  // Assessoria, Outro
   return [
     { key: "geral", label: "Geral" },
     { key: "tarefas", label: "Tarefas" },

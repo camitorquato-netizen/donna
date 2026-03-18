@@ -23,6 +23,7 @@ import TabCompensacoes from "@/components/pastas/TabCompensacoes";
 import TabRadiografia from "@/components/pastas/TabRadiografia";
 import TabFinanceiro from "@/components/pastas/TabFinanceiro";
 import TabWorkflowPlanejamento from "@/components/pastas/TabWorkflowPlanejamento";
+import TabWorkflowPatrimonial from "@/components/pastas/TabWorkflowPatrimonial";
 import { useAuth } from "@/contexts/AuthContext";
 
 const statusColors: Record<string, "gold" | "green" | "muted" | "dark"> = {
@@ -151,6 +152,8 @@ export default function PastaDetailPage({
         return <TabWorkflow pastaId={pasta!.id} />;
       case "workflow_planejamento":
         return <TabWorkflowPlanejamento pastaId={pasta!.id} />;
+      case "workflow_patrimonial":
+        return <TabWorkflowPatrimonial pastaId={pasta!.id} />;
       case "compensacoes":
         return (
           <TabCompensacoes
