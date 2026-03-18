@@ -7,6 +7,7 @@ import Btn from "@/components/Btn";
 import Badge from "@/components/Badge";
 import SearchInput from "@/components/SearchInput";
 import EmptyState from "@/components/EmptyState";
+import { useAuth } from "@/contexts/AuthContext";
 
 const statusColors: Record<string, "gold" | "green" | "muted" | "dark"> = {
   rascunho: "muted",
@@ -18,6 +19,7 @@ const statusColors: Record<string, "gold" | "green" | "muted" | "dark"> = {
 
 export default function ContratosPage() {
   const router = useRouter();
+  const { canEdit } = useAuth();
   const [contratos, setContratos] = useState<Contrato[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -72,9 +74,11 @@ export default function ContratosPage() {
               : `${contratos.length} contrato${contratos.length !== 1 ? "s" : ""}`}
           </p>
         </div>
-        <Btn variant="gold" onClick={handleNew}>
-          + Novo Contrato
-        </Btn>
+        {canEdit && (
+          <Btn variant="gold" onClick={handleNew}>
+            + Novo Contrato
+          </Btn>
+        )}
       </div>
 
       {!loading && contratos.length > 0 && (
@@ -110,9 +114,9 @@ export default function ContratosPage() {
       ) : contratos.length === 0 ? (
         <EmptyState
           title="Nenhum contrato cadastrado"
-          description='Clique em "Novo Contrato" para adicionar o primeiro contrato.'
-          actionLabel="+ Novo Contrato"
-          onAction={handleNew}
+          description={canEdit ? 'Clique em "Novo Contrato" para adicionar o primeiro contrato.' : "Nenhum contrato cadastrado ainda."}
+          actionLabel={canEdit ? "+ Novo Contrato" : undefined}
+          onAction={canEdit ? handleNew : undefined}
         />
       ) : (
         <div className="space-y-3">

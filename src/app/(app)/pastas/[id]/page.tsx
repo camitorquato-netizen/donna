@@ -23,6 +23,7 @@ import TabCompensacoes from "@/components/pastas/TabCompensacoes";
 import TabRadiografia from "@/components/pastas/TabRadiografia";
 import TabFinanceiro from "@/components/pastas/TabFinanceiro";
 import TabWorkflowPlanejamento from "@/components/pastas/TabWorkflowPlanejamento";
+import { useAuth } from "@/contexts/AuthContext";
 
 const statusColors: Record<string, "gold" | "green" | "muted" | "dark"> = {
   ativo: "green",
@@ -38,6 +39,7 @@ export default function PastaDetailPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
+  const { isReadOnly, canSeeFinanceiro } = useAuth();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab") as PastaTabKey | null;
   const creditoParam = searchParams.get("credito");
@@ -116,7 +118,9 @@ export default function PastaDetailPage({
     );
   }
 
-  const tabs: PastaTabConfig[] = getPastaTabsConfig(pasta, processo);
+  const tabs: PastaTabConfig[] = getPastaTabsConfig(pasta, processo).filter(
+    (t) => t.key !== "financeiro" || canSeeFinanceiro
+  );
 
   // Se a aba ativa não está disponível, voltar para "geral"
   if (!tabs.find((t) => t.key === activeTab)) {
@@ -212,7 +216,7 @@ export default function PastaDetailPage({
                 <Btn variant="gold" onClick={handleSave} loading={saving}>Salvar</Btn>
               </div>
             ) : (
-              <Btn variant="gold" onClick={() => setIsEditing(true)}>Editar</Btn>
+              !isReadOnly && <Btn variant="gold" onClick={() => setIsEditing(true)}>Editar</Btn>
             )
           )}
         </div>

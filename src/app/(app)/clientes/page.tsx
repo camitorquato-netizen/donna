@@ -7,6 +7,7 @@ import Btn from "@/components/Btn";
 import Badge from "@/components/Badge";
 import SearchInput from "@/components/SearchInput";
 import EmptyState from "@/components/EmptyState";
+import { useAuth } from "@/contexts/AuthContext";
 
 const pipelineColors: Record<string, "gold" | "green" | "red" | "muted" | "dark"> = {
   lead: "muted",
@@ -22,6 +23,7 @@ const pipelineColors: Record<string, "gold" | "green" | "red" | "muted" | "dark"
 
 export default function ClientesPage() {
   const router = useRouter();
+  const { canEdit } = useAuth();
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -74,9 +76,11 @@ export default function ClientesPage() {
               : `${clientes.length} cliente${clientes.length !== 1 ? "s" : ""}`}
           </p>
         </div>
-        <Btn variant="gold" onClick={handleNew}>
-          + Novo Cliente
-        </Btn>
+        {canEdit && (
+          <Btn variant="gold" onClick={handleNew}>
+            + Novo Cliente
+          </Btn>
+        )}
       </div>
 
       {!loading && clientes.length > 0 && (
@@ -112,9 +116,9 @@ export default function ClientesPage() {
       ) : clientes.length === 0 ? (
         <EmptyState
           title="Nenhum cliente cadastrado"
-          description='Clique em "Novo Cliente" para adicionar o primeiro cliente.'
-          actionLabel="+ Novo Cliente"
-          onAction={handleNew}
+          description={canEdit ? 'Clique em "Novo Cliente" para adicionar o primeiro cliente.' : "Nenhum cliente cadastrado ainda."}
+          actionLabel={canEdit ? "+ Novo Cliente" : undefined}
+          onAction={canEdit ? handleNew : undefined}
         />
       ) : (
         <div className="space-y-3">

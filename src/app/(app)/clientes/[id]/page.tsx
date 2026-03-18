@@ -5,6 +5,7 @@ import { Cliente, STATUS_PIPELINE_LABELS, StatusPipeline, Contrato, CONTRATO_STA
 import { getCliente, saveCliente, getContratosByCliente } from "@/lib/store";
 import Btn from "@/components/Btn";
 import Badge from "@/components/Badge";
+import { useAuth } from "@/contexts/AuthContext";
 
 const inputClass =
   "w-full border border-st-border rounded-lg px-3 py-2 text-sm font-sans focus:outline-none focus:border-st-gold disabled:opacity-60 disabled:bg-st-light disabled:cursor-not-allowed";
@@ -18,6 +19,7 @@ export default function ClienteDetailPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
+  const { isReadOnly } = useAuth();
   const [cliente, setCliente] = useState<Cliente | null>(null);
   const [contratos, setContratos] = useState<Contrato[]>([]);
   const [loading, setLoading] = useState(true);
@@ -115,7 +117,7 @@ export default function ClienteDetailPage({
             <Btn variant="gold" onClick={handleSave} loading={saving}>Salvar</Btn>
           </div>
         ) : (
-          <Btn variant="gold" onClick={() => setIsEditing(true)}>Editar</Btn>
+          !isReadOnly && <Btn variant="gold" onClick={() => setIsEditing(true)}>Editar</Btn>
         )}
       </div>
 

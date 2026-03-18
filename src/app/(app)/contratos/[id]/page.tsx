@@ -5,6 +5,7 @@ import { Contrato, ContratoStatus, CONTRATO_STATUS_LABELS, CONTRATO_OBJETOS } fr
 import { getContrato, saveContrato } from "@/lib/store";
 import Btn from "@/components/Btn";
 import ClienteSelector from "@/components/ClienteSelector";
+import { useAuth } from "@/contexts/AuthContext";
 
 const inputClass =
   "w-full border border-st-border rounded-lg px-3 py-2 text-sm font-sans focus:outline-none focus:border-st-gold disabled:opacity-60 disabled:bg-st-light disabled:cursor-not-allowed";
@@ -18,6 +19,7 @@ export default function ContratoDetailPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
+  const { isReadOnly } = useAuth();
   const [contrato, setContrato] = useState<Contrato | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -110,7 +112,7 @@ export default function ContratoDetailPage({
             <Btn variant="gold" onClick={handleSave} loading={saving}>Salvar</Btn>
           </div>
         ) : (
-          <Btn variant="gold" onClick={() => setIsEditing(true)}>Editar</Btn>
+          !isReadOnly && <Btn variant="gold" onClick={() => setIsEditing(true)}>Editar</Btn>
         )}
       </div>
 

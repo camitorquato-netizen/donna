@@ -2,11 +2,14 @@
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Logo from "./Logo";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface NavItem {
   label: string;
   href: string;
   icon: string;
+  /** If set, only users with this permission can see the item */
+  requirePermissao?: "total";
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -14,8 +17,8 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Clientes", href: "/clientes", icon: "◎" },
   { label: "Contratos", href: "/contratos", icon: "◑" },
   { label: "Pastas", href: "/pastas", icon: "◫" },
-  { label: "Financeiro", href: "/financeiro", icon: "◆" },
-  { label: "Usuários", href: "/usuarios", icon: "◉" },
+  { label: "Financeiro", href: "/financeiro", icon: "◆", requirePermissao: "total" },
+  { label: "Usuários", href: "/usuarios", icon: "◉", requirePermissao: "total" },
   { label: "Workflow RCT", href: "/workflow-rct", icon: "⚙" },
   { label: "Piloto RCT", href: "/radiografia", icon: "⚡" },
   { label: "Piloto Patrimonial", href: "/casos", icon: "▸" },
@@ -28,11 +31,23 @@ interface SidebarProps {
 
 export default function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname();
+  const { usuario, user, signOut } = useAuth();
 
   function isActive(href: string) {
     if (href === "/") return pathname === "/";
     return pathname.startsWith(href);
   }
+
+  const permissao = usuario?.permissao ?? "somente_leitura";
+  const visibleItems = NAV_ITEMS.filter((item) => {
+    if (item.requirePermissao && permissao !== item.requirePermissao) return false;
+    return true;
+  });
+
+  const avatarUrl =
+    usuario?.fotoUrl || user?.user_metadata?.avatar_url || "";
+  const displayName = usuario?.nome || user?.email || "";
+  const displayEmail = usuario?.email || user?.email || "";
 
   return (
     <>
@@ -60,7 +75,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
 
         {/* Nav */}
         <nav className="flex-1 py-4 px-3 space-y-1">
-          {NAV_ITEMS.map((item) => {
+          {visibleItems.map((item) => {
             const active = isActive(item.href);
             return (
               <Link
@@ -80,11 +95,31 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
           })}
         </nav>
 
-        {/* Footer */}
-        <div className="px-5 py-4 border-t border-white/10">
-          <p className="text-xs text-white/40 font-sans">
-            Silveira Torquato Advogados
-          </p>
+        {/* User profile footer */}
+        <div className="px-4 py-3 border-t border-white/10 flex items-center gap-3">
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt=""
+              className="w-8 h-8 rounded-full shrink-0"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-st-gold/30 flex items-center justify-center text-sm text-st-gold shrink-0">
+              {displayName.charAt(0).toUpperCase() || "?"}
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm text-white truncate">{displayName}</p>
+            <p className="text-xs text-white/40 truncate">{displayEmail}</p>
+          </div>
+          <button
+            onClick={signOut}
+            className="text-white/40 hover:text-white text-xs shrink-0 cursor-pointer"
+            title="Sair"
+          >
+            Sair
+          </button>
         </div>
       </aside>
     </>

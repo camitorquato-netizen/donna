@@ -1,9 +1,19 @@
 "use client";
 import { useState } from "react";
 import Sidebar from "@/components/Sidebar";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+function AppShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-st-light flex items-center justify-center">
+        <p className="text-st-muted text-sm">Carregando...</p>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -27,5 +37,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="p-4 sm:p-6 lg:p-8">{children}</div>
       </main>
     </>
+  );
+}
+
+export default function AppLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <AuthProvider>
+      <AppShell>{children}</AppShell>
+    </AuthProvider>
   );
 }

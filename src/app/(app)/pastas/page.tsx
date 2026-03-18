@@ -7,6 +7,7 @@ import Btn from "@/components/Btn";
 import Badge from "@/components/Badge";
 import SearchInput from "@/components/SearchInput";
 import EmptyState from "@/components/EmptyState";
+import { useAuth } from "@/contexts/AuthContext";
 
 const statusColors: Record<string, "gold" | "green" | "muted" | "dark"> = {
   ativo: "green",
@@ -17,6 +18,7 @@ const statusColors: Record<string, "gold" | "green" | "muted" | "dark"> = {
 
 export default function PastasPage() {
   const router = useRouter();
+  const { canEdit } = useAuth();
   const [pastas, setPastas] = useState<Pasta[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -78,9 +80,11 @@ export default function PastasPage() {
               : `${pastas.length} pasta${pastas.length !== 1 ? "s" : ""}`}
           </p>
         </div>
-        <Btn variant="gold" onClick={handleNew}>
-          + Nova Pasta
-        </Btn>
+        {canEdit && (
+          <Btn variant="gold" onClick={handleNew}>
+            + Nova Pasta
+          </Btn>
+        )}
       </div>
 
       {!loading && pastas.length > 0 && (
@@ -130,9 +134,9 @@ export default function PastasPage() {
       ) : pastas.length === 0 ? (
         <EmptyState
           title="Nenhuma pasta cadastrada"
-          description='Clique em "Nova Pasta" para criar a primeira pasta de trabalho.'
-          actionLabel="+ Nova Pasta"
-          onAction={handleNew}
+          description={canEdit ? 'Clique em "Nova Pasta" para criar a primeira pasta de trabalho.' : "Nenhuma pasta cadastrada ainda."}
+          actionLabel={canEdit ? "+ Nova Pasta" : undefined}
+          onAction={canEdit ? handleNew : undefined}
         />
       ) : (
         <div className="space-y-3">
