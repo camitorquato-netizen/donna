@@ -1,7 +1,7 @@
 "use client";
 import { use, useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { Usuario, USUARIO_PERMISSAO_LABELS, UsuarioPermissao } from "@/lib/types";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Usuario, USUARIO_PERMISSAO_LABELS, UsuarioPermissao, createEmptyUsuario } from "@/lib/types";
 import { getUsuario, saveUsuario, deleteUsuario } from "@/lib/store";
 import Btn from "@/components/Btn";
 
@@ -17,24 +17,31 @@ export default function UsuarioDetailPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isNew = searchParams.get("novo") === "1";
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const u = await getUsuario(id);
-      setUsuario(u);
-      // Novo usuario (nome vazio) inicia em modo edição
-      if (u && !u.nome) setIsEditing(true);
+      if (isNew) {
+        setUsuario(createEmptyUsuario(id));
+        setIsEditing(true);
+      } else {
+        const u = await getUsuario(id);
+        setUsuario(u);
+        if (u && !u.nome) setIsEditing(true);
+      }
     } catch (err) {
       console.error("[UsuarioDetail] Erro:", err);
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, isNew]);
 
   useEffect(() => {
     load();
@@ -50,6 +57,8 @@ export default function UsuarioDetailPage({
     try {
       await saveUsuario(usuario);
       setIsEditing(false);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
     } catch (err) {
       console.error("[UsuarioDetail] Erro ao salvar:", err);
     } finally {
@@ -123,9 +132,16 @@ export default function UsuarioDetailPage({
             </Btn>
           </div>
         ) : (
-          <Btn variant="gold" onClick={() => setIsEditing(true)}>
-            Editar
-          </Btn>
+          <div className="flex items-center gap-3 shrink-0">
+            {saved && (
+              <span className="text-sm font-sans text-green-600 bg-green-50 border border-green-200 rounded-lg px-3 py-1 animate-pulse">
+                Salvo com sucesso!
+              </span>
+            )}
+            <Btn variant="gold" onClick={() => setIsEditing(true)}>
+              Editar
+            </Btn>
+          </div>
         )}
       </div>
 

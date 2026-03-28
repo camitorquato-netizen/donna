@@ -110,8 +110,8 @@ export async function getUsuario(id: string): Promise<Usuario | null> {
 export async function saveUsuario(u: Usuario): Promise<void> {
   const { error } = await supabase
     .from("usuarios")
-    .upsert(usuarioToRow(u), { onConflict: "id" });
-  if (error) console.error("[Store] Erro ao salvar usuario:", error);
+    .upsert(usuarioToRow(u), { onConflict: "id", ignoreDuplicates: false });
+  if (error) console.error("[Store] Erro ao salvar usuario:", error.message, "| code:", error.code, "| details:", error.details, "| hint:", error.hint);
 }
 
 export async function deleteUsuario(id: string): Promise<void> {

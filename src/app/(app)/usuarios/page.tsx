@@ -1,8 +1,8 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Usuario, USUARIO_PERMISSAO_LABELS, UsuarioPermissao, createEmptyUsuario } from "@/lib/types";
-import { getAllUsuarios, saveUsuario } from "@/lib/store";
+import { Usuario, USUARIO_PERMISSAO_LABELS, UsuarioPermissao } from "@/lib/types";
+import { getAllUsuarios } from "@/lib/store";
 import Btn from "@/components/Btn";
 import Badge from "@/components/Badge";
 import SearchInput from "@/components/SearchInput";
@@ -37,11 +37,9 @@ export default function UsuariosPage() {
     load();
   }, [load]);
 
-  async function handleNew() {
+  function handleNew() {
     const id = crypto.randomUUID();
-    const u = createEmptyUsuario(id);
-    await saveUsuario(u);
-    router.push(`/usuarios/${id}`);
+    router.push(`/usuarios/${id}?novo=1`);
   }
 
   const filtered = usuarios.filter((u) => {
