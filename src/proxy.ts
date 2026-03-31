@@ -19,17 +19,25 @@ export default async function proxy(request: NextRequest) {
 
   // No session → redirect to login
   if (!user) {
+    console.log("[proxy] No session for:", pathname);
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
+  console.log("[proxy] Auth email:", user.email, "| Path:", pathname);
+
   // Check if user is registered in usuarios table
-  const { data: usuario } = await supabase
+  const { data: usuario, error: dbError } = await supabase
     .from("usuarios")
     .select("id, permissao, ativo")
     .eq("email", user.email)
     .maybeSingle();
 
+  if (dbError) {
+    console.error("[proxy] DB error:", dbError.message);
+  }
+
   if (!usuario) {
+    console.log("[proxy] NOT REGISTERED — email from auth:", JSON.stringify(user.email));
     await supabase.auth.signOut();
     return NextResponse.redirect(
       new URL("/login?error=not_registered", request.url)
