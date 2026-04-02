@@ -524,8 +524,14 @@ export async function getAllClientes(): Promise<Cliente[]> {
     .order("nome", { ascending: true });
 
   if (error) {
-    console.error("[Store] Erro ao carregar clientes:", error);
-    return [];
+    // Fallback: tentar sem join de parceiros
+    console.warn("[Store] Erro com join parceiros, tentando sem:", error.message);
+    const { data: d2, error: e2 } = await supabase
+      .from("clientes")
+      .select("*")
+      .order("nome", { ascending: true });
+    if (e2) { console.error("[Store] Erro ao carregar clientes:", e2); return []; }
+    return (d2 || []).map((r) => rowToCliente(r as ClienteRow));
   }
 
   return (data || []).map((r) => rowToCliente(r as ClienteRow));
@@ -782,8 +788,13 @@ export async function getAllContratos(): Promise<Contrato[]> {
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("[Store] Erro ao carregar contratos:", error);
-    return [];
+    console.warn("[Store] Erro com join parceiros em contratos, tentando sem:", error.message);
+    const { data: d2, error: e2 } = await supabase
+      .from("contratos")
+      .select("*, clientes(nome)")
+      .order("created_at", { ascending: false });
+    if (e2) { console.error("[Store] Erro ao carregar contratos:", e2); return []; }
+    return (d2 || []).map((r) => rowToContrato(r as ContratoRow));
   }
 
   return (data || []).map((r) => rowToContrato(r as ContratoRow));
@@ -797,8 +808,14 @@ export async function getContrato(id: string): Promise<Contrato | null> {
     .maybeSingle();
 
   if (error) {
-    console.error("[Store] Erro ao carregar contrato:", error);
-    return null;
+    console.warn("[Store] Erro com join parceiros, tentando sem:", error.message);
+    const { data: d2, error: e2 } = await supabase
+      .from("contratos")
+      .select("*, clientes(nome)")
+      .eq("id", id)
+      .maybeSingle();
+    if (e2) { console.error("[Store] Erro ao carregar contrato:", e2); return null; }
+    return d2 ? rowToContrato(d2 as ContratoRow) : null;
   }
 
   return data ? rowToContrato(data as ContratoRow) : null;
@@ -832,8 +849,14 @@ export async function getContratosByCliente(clienteId: string): Promise<Contrato
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("[Store] Erro ao carregar contratos do cliente:", error);
-    return [];
+    console.warn("[Store] Erro com join parceiros, tentando sem:", error.message);
+    const { data: d2, error: e2 } = await supabase
+      .from("contratos")
+      .select("*, clientes(nome)")
+      .eq("cliente_id", clienteId)
+      .order("created_at", { ascending: false });
+    if (e2) { console.error("[Store] Erro ao carregar contratos do cliente:", e2); return []; }
+    return (d2 || []).map((r) => rowToContrato(r as ContratoRow));
   }
 
   return (data || []).map((r) => rowToContrato(r as ContratoRow));
