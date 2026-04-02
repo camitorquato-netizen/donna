@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { Lancamento, LANCAMENTO_STATUS_LABELS, LancamentoStatus } from "@/lib/types";
-import { getLancamentosByPasta } from "@/lib/store";
+import { getLancamentosByPasta, deleteLancamento } from "@/lib/store";
 import Btn from "@/components/Btn";
 import Badge from "@/components/Badge";
 import LancamentoModal from "@/components/LancamentoModal";
@@ -99,11 +99,13 @@ export default function TabFinanceiro({ pastaId, clienteId }: TabFinanceiroProps
           {lancamentos.map((l) => (
             <div
               key={l.id}
-              onClick={() => setModal(l)}
-              className="bg-white border border-st-border rounded-xl p-4 hover:shadow-sm transition-shadow cursor-pointer"
+              className="bg-white border border-st-border rounded-xl p-4 hover:shadow-sm transition-shadow"
             >
               <div className="flex items-center justify-between gap-2">
-                <div className="min-w-0 flex-1">
+                <div
+                  className="min-w-0 flex-1 cursor-pointer"
+                  onClick={() => setModal(l)}
+                >
                   <div className="flex items-center gap-2 flex-wrap mb-1">
                     <Badge color={l.tipo === "a_receber" ? "green" : "red"}>
                       {l.tipo === "a_receber" ? "Receber" : "Pagar"}
@@ -127,6 +129,17 @@ export default function TabFinanceiro({ pastaId, clienteId }: TabFinanceiroProps
                     )}
                   </div>
                 </div>
+                <button
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    if (!window.confirm("Excluir este lançamento?")) return;
+                    await deleteLancamento(l.id);
+                    setLancamentos((prev) => prev.filter((x) => x.id !== l.id));
+                  }}
+                  className="text-xs text-st-muted hover:text-red-500 font-sans cursor-pointer px-2 py-1 shrink-0"
+                >
+                  ×
+                </button>
               </div>
             </div>
           ))}
