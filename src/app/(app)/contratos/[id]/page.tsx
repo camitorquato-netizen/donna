@@ -1,7 +1,7 @@
 "use client";
 import { use, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Contrato, ContratoStatus, CONTRATO_STATUS_LABELS, CONTRATO_OBJETOS, Lancamento } from "@/lib/types";
+import { Contrato, ContratoStatus, CONTRATO_STATUS_LABELS, CONTRATO_OBJETOS, Lancamento, Pasta } from "@/lib/types";
 import { getContrato, saveContrato, saveLancamento, getPastaByContrato, getParceiro } from "@/lib/store";
 import Btn from "@/components/Btn";
 import ClienteSelector from "@/components/ClienteSelector";
@@ -22,6 +22,7 @@ export default function ContratoDetailPage({
   const router = useRouter();
   const { isReadOnly } = useAuth();
   const [contrato, setContrato] = useState<Contrato | null>(null);
+  const [pastaVinculada, setPastaVinculada] = useState<Pasta | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -29,8 +30,12 @@ export default function ContratoDetailPage({
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const c = await getContrato(id);
+      const [c, p] = await Promise.all([
+        getContrato(id),
+        getPastaByContrato(id),
+      ]);
       setContrato(c);
+      setPastaVinculada(p);
       if (c && !c.titulo) setIsEditing(true);
     } catch (err) {
       console.error("[ContratoDetail] Erro:", err);
@@ -188,20 +193,68 @@ export default function ContratoDetailPage({
           <h2 className="font-serif font-bold text-st-dark mb-4">
             Vinculação
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <ClienteSelector
-              value={contrato.clienteId}
-              onChange={(cid) => set("clienteId", cid)}
-              disabled={dis}
-              returnTo={`/contratos/${id}`}
-            />
-            <ParceiroSelector
-              value={contrato.parceiroId || ""}
-              onChange={(pid) => set("parceiroId", pid || undefined)}
-              disabled={dis}
-              returnTo={`/contratos/${id}`}
-            />
-          </div>
+          {isEditing ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <ClienteSelector
+                value={contrato.clienteId}
+                onChange={(cid) => set("clienteId", cid)}
+                disabled={false}
+                returnTo={`/contratos/${id}`}
+              />
+              <ParceiroSelector
+                value={contrato.parceiroId || ""}
+                onChange={(pid) => set("parceiroId", pid || undefined)}
+                disabled={false}
+                returnTo={`/contratos/${id}`}
+              />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-sans text-st-muted mb-1">
+                  Cliente
+                </label>
+                {contrato.clienteId ? (
+                  <button
+                    onClick={() => router.push(`/clientes/${contrato.clienteId}`)}
+                    className="text-sm font-sans font-bold text-st-gold hover:underline cursor-pointer"
+                  >
+                    {(contrato.clienteNome || "Ver cliente").toUpperCase()}
+                  </button>
+                ) : (
+                  <p className="text-sm text-st-muted font-sans">Nenhum cliente vinculado</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-xs font-sans text-st-muted mb-1">
+                  Parceiro
+                </label>
+                {contrato.parceiroId ? (
+                  <button
+                    onClick={() => router.push(`/parceiros/${contrato.parceiroId}`)}
+                    className="text-sm font-sans font-bold text-st-gold hover:underline cursor-pointer"
+                  >
+                    {(contrato.parceiroNome || "Ver parceiro").toUpperCase()}
+                  </button>
+                ) : (
+                  <p className="text-sm text-st-muted font-sans">Nenhum parceiro vinculado</p>
+                )}
+              </div>
+              {pastaVinculada && (
+                <div>
+                  <label className="block text-xs font-sans text-st-muted mb-1">
+                    Pasta
+                  </label>
+                  <button
+                    onClick={() => router.push(`/pastas/${pastaVinculada.id}`)}
+                    className="text-sm font-sans font-bold text-st-gold hover:underline cursor-pointer"
+                  >
+                    {pastaVinculada.titulo || pastaVinculada.numero || "Ver pasta"}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </section>
 
         {/* Dados do Contrato */}
@@ -469,39 +522,43 @@ export default function ContratoDetailPage({
           </section>
         )}
 
-        {/* Criar Pasta */}
-        {!isReadOnly && (
-          <section className="bg-white border border-st-border rounded-xl p-4 sm:p-5">
-            <div className="flex items-center justify-between">
-              <h2 className="font-serif font-bold text-st-dark">
-                Pasta de Trabalho
-              </h2>
+        {/* Pasta de Trabalho */}
+        <section className="bg-white border border-st-border rounded-xl p-4 sm:p-5">
+          <div className="flex items-center justify-between">
+            <h2 className="font-serif font-bold text-st-dark">
+              Pasta de Trabalho
+            </h2>
+            {pastaVinculada ? (
               <button
-                onClick={() => {
-                  const params = new URLSearchParams({
-                    contratoId: id,
-                    clienteId: contrato.clienteId || "",
-                    titulo: contrato.titulo || "",
-                    clienteNome: contrato.clienteNome || "",
-                    contratoTitulo: contrato.titulo || "",
-                  });
-                  router.push(`/pastas/novo?${params.toString()}`);
-                }}
-                className="text-sm text-st-gold font-sans hover:underline cursor-pointer"
+                onClick={() => router.push(`/pastas/${pastaVinculada.id}`)}
+                className="text-sm font-sans font-bold text-st-gold hover:underline cursor-pointer"
               >
-                + Criar Pasta para este Contrato
+                {pastaVinculada.titulo || pastaVinculada.numero || "Ver pasta"}
               </button>
-            </div>
-            {contrato.clienteNome && (
-              <p className="text-xs text-st-muted font-sans mt-2">
-                Cliente:{" "}
-                <button onClick={() => router.push(`/clientes/${contrato.clienteId}`)} className="font-bold text-st-gold hover:underline cursor-pointer">
-                  {contrato.clienteNome.toUpperCase()}
+            ) : (
+              !isReadOnly && (
+                <button
+                  onClick={() => {
+                    const params = new URLSearchParams({
+                      contratoId: id,
+                      clienteId: contrato.clienteId || "",
+                      titulo: contrato.titulo || "",
+                      clienteNome: contrato.clienteNome || "",
+                      contratoTitulo: contrato.titulo || "",
+                    });
+                    router.push(`/pastas/novo?${params.toString()}`);
+                  }}
+                  className="text-sm text-st-gold font-sans hover:underline cursor-pointer"
+                >
+                  + Criar Pasta para este Contrato
                 </button>
-              </p>
+              )
             )}
-          </section>
-        )}
+          </div>
+          {!pastaVinculada && (
+            <p className="text-xs text-st-muted font-sans mt-2">Nenhuma pasta vinculada a este contrato.</p>
+          )}
+        </section>
       </div>
     </div>
   );
