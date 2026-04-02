@@ -98,13 +98,11 @@ export async function POST(req: NextRequest) {
     const payload: ZapSignPayload = await req.json();
     const eventType = payload.event_type || "";
 
-    console.log(`[ZapSign] Evento: "${eventType}" | Doc: "${payload.name || payload.doc?.name || "?"}" | Keys: ${Object.keys(payload).join(",")}`);
+    // DEBUG: log full payload to understand ZapSign format
+    console.log(`[ZapSign] FULL PAYLOAD: ${JSON.stringify(payload).slice(0, 2000)}`);
 
-    // 3) Aceitar QUALQUER evento que tenha dados de documento assinado
-    // (ZapSign pode usar nomes variados: doc_signed, signed, signer_signed, etc.)
-    // Se não for evento de assinatura, ignorar
+    // 3) Aceitar qualquer evento de assinatura
     if (!VALID_EVENTS.has(eventType)) {
-      console.log(`[ZapSign] Evento "${eventType}" ignorado. Payload sample: ${JSON.stringify(payload).slice(0, 500)}`);
       return NextResponse.json({
         status: "ignored",
         reason: `Evento "${eventType}" não requer processamento`,
@@ -116,31 +114,6 @@ export async function POST(req: NextRequest) {
     const docToken = payload.token || payload.doc?.token || "";
     const signedFileUrl = payload.signed_file || "";
     const signer = extractSigner(payload);
-
-    // 5) Filtrar por nome do documento (se filtro configurado)
-    const docNameLower = docName.toLowerCase();
-    const { docFilter } = zapsignConfig;
-
-    if (docFilter.length > 0 && !docFilter.some((kw) => docNameLower.includes(kw))) {
-      console.log(`[ZapSign] Documento "${docName}" fora do filtro — ignorado`);
-      return NextResponse.json({
-        status: "ignored",
-        reason: "Documento não contém palavras-chave do filtro",
-        document: docName,
-      });
-    }
-
-    if (!signer.name) {
-      console.warn("[ZapSign] Signatário sem nome no payload");
-      return NextResponse.json(
-        { error: "Signatário sem nome" },
-        { status: 400 }
-      );
-    }
-
-    console.log(
-      `[ZapSign] Processando: "${docName}" — signatário: ${signer.name} (${signer.email})`
-    );
 
     // 6) Criar/atualizar contrato no Donna + vincular cliente
     const contratoResult = await upsertContrato({
