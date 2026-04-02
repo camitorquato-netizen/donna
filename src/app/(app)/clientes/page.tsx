@@ -144,10 +144,16 @@ export default function ClientesPage() {
                       <Badge color={pipelineColors[c.statusPipeline] || "muted"}>
                         {STATUS_PIPELINE_LABELS[c.statusPipeline as StatusPipeline] || c.statusPipeline}
                       </Badge>
+                      {c.parceiroNome && (
+                        <Badge color="gold">
+                          {c.parceiroNome}
+                        </Badge>
+                      )}
                     </div>
                     <div className="flex gap-3 mt-0.5 text-xs text-st-muted font-sans flex-wrap">
                       {c.email && <span className="truncate">{c.email}</span>}
                       {c.telefone && <span>{c.telefone}</span>}
+                      {c.origem && <span>Origem: {c.origem}</span>}
                     </div>
                   </div>
                 </div>

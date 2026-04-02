@@ -16,6 +16,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/", icon: "◈" },
   { label: "Clientes", href: "/clientes", icon: "◎" },
   { label: "Contratos", href: "/contratos", icon: "◑" },
+  { label: "Parceiros", href: "/parceiros", icon: "◇" },
   { label: "Pastas", href: "/pastas", icon: "◫" },
   { label: "Financeiro", href: "/financeiro", icon: "◆", requirePermissao: "total" },
   { label: "Usuários", href: "/usuarios", icon: "◉", requirePermissao: "total" },

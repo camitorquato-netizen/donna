@@ -1,28 +1,22 @@
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Contrato, ContratoStatus, CONTRATO_STATUS_LABELS, CONTRATO_OBJETOS } from "@/lib/types";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Contrato, ContratoStatus, CONTRATO_STATUS_LABELS, CONTRATO_OBJETOS, createEmptyContrato } from "@/lib/types";
 import { saveContrato } from "@/lib/store";
 import Btn from "@/components/Btn";
 import ClienteSelector from "@/components/ClienteSelector";
 
 export default function NovoContratoPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [saving, setSaving] = useState(false);
 
-  const [contrato, setContrato] = useState<Contrato>({
-    id: crypto.randomUUID(),
-    clienteId: "",
-    objeto: "",
-    titulo: "",
-    arquivoUrl: "",
-    valor: null,
-    percentualHonorarios: 0.20,
-    dataEntrada: null,
-    vigencia: null,
-    percentualParceiro: 0,
-    status: "rascunho",
-  });
+  const preClienteId = searchParams.get("clienteId") || "";
+
+  const [contrato, setContrato] = useState<Contrato>(() => ({
+    ...createEmptyContrato(crypto.randomUUID()),
+    clienteId: preClienteId,
+  }));
 
   function set<K extends keyof Contrato>(key: K, val: Contrato[K]) {
     setContrato((prev) => ({ ...prev, [key]: val }));

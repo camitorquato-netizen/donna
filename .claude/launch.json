@@ -3,7 +3,7 @@
   "configurations": [
     {
       "name": "nextjs-dev",
-      "runtimeExecutable": "/opt/homebrew/bin/npm",
+      "runtimeExecutable": "/usr/local/bin/npm",
       "runtimeArgs": ["run", "dev"],
       "port": 3000,
       "autoPort": true,

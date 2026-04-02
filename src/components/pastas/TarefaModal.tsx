@@ -1,13 +1,14 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Tarefa,
   TarefaStatus,
   TAREFA_STATUS_LABELS,
   TarefaPrioridade,
   TAREFA_PRIORIDADE_LABELS,
+  Usuario,
 } from "@/lib/types";
-import { saveTarefa } from "@/lib/store";
+import { saveTarefa, getAllUsuarios } from "@/lib/store";
 import Btn from "@/components/Btn";
 
 interface TarefaModalProps {
@@ -39,6 +40,11 @@ export default function TarefaModal({
     }
   );
   const [saving, setSaving] = useState(false);
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+
+  useEffect(() => {
+    getAllUsuarios().then(setUsuarios);
+  }, []);
 
   function set<K extends keyof Tarefa>(key: K, val: Tarefa[K]) {
     setForm((prev) => ({ ...prev, [key]: val }));
@@ -159,6 +165,29 @@ export default function TarefaModal({
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* Responsável */}
+          <div>
+            <label className="block text-xs font-sans text-st-muted mb-1">
+              Responsável
+            </label>
+            <select
+              value={form.responsavelId || ""}
+              onChange={(e) =>
+                set("responsavelId", e.target.value || undefined)
+              }
+              className="w-full border border-st-border rounded-lg px-3 py-2 text-sm font-sans focus:outline-none focus:border-st-gold bg-white"
+            >
+              <option value="">Selecione...</option>
+              {usuarios
+                .filter((u) => u.ativo)
+                .map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.nome}
+                  </option>
+                ))}
+            </select>
           </div>
 
           {/* Status */}

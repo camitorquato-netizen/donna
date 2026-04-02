@@ -217,6 +217,27 @@ export interface Cliente {
   statusPipeline: StatusPipeline;
   origem: string;
   responsavelId?: string;
+  parceiroId?: string;
+  parceiroNome?: string; // join
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Parceiros                                                          */
+/* ------------------------------------------------------------------ */
+
+export interface Parceiro {
+  id: string;
+  razaoSocial: string;
+  cpfCnpj: string;
+  endereco: string;
+  email: string;
+  telefone: string;
+  dadosBancarios: string;
+  percentualParceria: number;
+  observacoes: string;
+  ativo: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -265,8 +286,11 @@ export interface Contrato {
   zapsignSignerName?: string;
   zapsignSignerEmail?: string;
   status: ContratoStatus;
+  quantidadeParcelas: number;
+  datasPagamento: string[];
   casoIaId?: string;
   clienteNome?: string; // join — vem do select
+  parceiroNome?: string; // join
   createdAt?: string;
   updatedAt?: string;
 }
@@ -824,6 +848,39 @@ export function createEmptyCliente(id: string): Cliente {
     observacoes: "",
     statusPipeline: "lead",
     origem: "",
+  };
+}
+
+export function createEmptyParceiro(id: string): Parceiro {
+  return {
+    id,
+    razaoSocial: "",
+    cpfCnpj: "",
+    endereco: "",
+    email: "",
+    telefone: "",
+    dadosBancarios: "",
+    percentualParceria: 0,
+    observacoes: "",
+    ativo: true,
+  };
+}
+
+export function createEmptyContrato(id: string): Contrato {
+  return {
+    id,
+    clienteId: "",
+    objeto: "",
+    titulo: "",
+    arquivoUrl: "",
+    valor: null,
+    percentualHonorarios: 0.2,
+    dataEntrada: null,
+    vigencia: null,
+    percentualParceiro: 0,
+    status: "rascunho",
+    quantidadeParcelas: 1,
+    datasPagamento: [],
   };
 }
 

@@ -114,6 +114,9 @@ export async function POST(req: NextRequest) {
     const signedFileUrl = payload.signed_file || "";
     const signer = extractSigner(payload);
 
+    // 5) Buscar parceiro pelo email ou CPF/CNPJ do signatário
+    const parceiroId = await findParceiroBySignerInfo(signer);
+
     // 6) Criar/atualizar contrato no Donna + vincular cliente
     const contratoResult = await upsertContrato({
       docName,
@@ -121,6 +124,7 @@ export async function POST(req: NextRequest) {
       signedFileUrl,
       externalId: payload.external_id || "",
       signer,
+      parceiroId,
     });
 
     // 7) Disparar notificações em paralelo
@@ -201,8 +205,9 @@ async function upsertContrato(params: {
   signedFileUrl: string;
   externalId: string;
   signer: ReturnType<typeof extractSigner>;
+  parceiroId?: string | null;
 }): Promise<{ action: string; contratoId: string; clienteId: string | null }> {
-  const { docName, docToken, signedFileUrl, externalId, signer } = params;
+  const { docName, docToken, signedFileUrl, externalId, signer, parceiroId } = params;
   const supabase = getSupabase();
 
   try {
@@ -252,6 +257,7 @@ async function upsertContrato(params: {
           zapsign_signer_email: signer.email || null,
           arquivo_url: signedFileUrl || undefined,
           cliente_id: clienteId || undefined,
+          parceiro_id: parceiroId || undefined,
           updated_at: now,
         })
         .eq("id", contratoId);
@@ -278,7 +284,7 @@ async function upsertContrato(params: {
         data_entrada: now.slice(0, 10),
         vigencia: null,
         comercial_resp_id: null,
-        parceiro_id: null,
+        parceiro_id: parceiroId || null,
         percentual_parceiro: 0,
         zapsign_doc_token: docToken,
         zapsign_signed_at: signer.signedAt || now,
@@ -358,6 +364,44 @@ async function findClienteBySignerInfo(
   }
 
   console.log(`[ZapSign] Cliente não encontrado para signatário: ${signer.name}`);
+  return null;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Buscar parceiro pelo email ou CPF/CNPJ do signatário               */
+/* ------------------------------------------------------------------ */
+
+async function findParceiroBySignerInfo(
+  signer: ReturnType<typeof extractSigner>
+): Promise<string | null> {
+  const supabase = getSupabase();
+
+  if (signer.email) {
+    const { data } = await supabase
+      .from("parceiros")
+      .select("id")
+      .eq("email", signer.email)
+      .maybeSingle();
+    if (data) {
+      console.log(`[ZapSign] Parceiro encontrado por email: ${signer.email}`);
+      return data.id;
+    }
+  }
+
+  const doc = signer.cpf || signer.cnpj;
+  if (doc) {
+    const docClean = doc.replace(/\D/g, "");
+    const { data } = await supabase
+      .from("parceiros")
+      .select("id")
+      .eq("cpf_cnpj", docClean)
+      .maybeSingle();
+    if (data) {
+      console.log(`[ZapSign] Parceiro encontrado por CPF/CNPJ`);
+      return data.id;
+    }
+  }
+
   return null;
 }
 

@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Pasta } from "@/lib/types";
 import { savePasta } from "@/lib/store";
 import Btn from "@/components/Btn";
@@ -8,7 +8,11 @@ import TabGeral from "@/components/pastas/TabGeral";
 
 export default function NovaPastaPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [saving, setSaving] = useState(false);
+
+  const preClienteId = searchParams.get("clienteId") || "";
+  const preTitulo = searchParams.get("titulo") || "";
 
   const id = useState(() => crypto.randomUUID())[0];
   const numero = useState(() => {
@@ -20,8 +24,8 @@ export default function NovaPastaPage() {
   const [pasta, setPasta] = useState<Pasta>({
     id,
     numero,
-    clienteId: "",
-    titulo: "",
+    clienteId: preClienteId,
+    titulo: preTitulo,
     tipo: "servico",
     tipoServico: "",
     status: "ativo",

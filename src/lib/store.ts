@@ -5,6 +5,7 @@ import {
   Atendimento,
   Cliente,
   StatusPipeline,
+  Parceiro,
   Contrato,
   ContratoStatus,
   Lancamento,
@@ -463,11 +464,13 @@ interface ClienteRow {
   status_pipeline: string;
   origem: string;
   responsavel_id: string | null;
+  parceiro_id: string | null;
   created_at: string;
   updated_at: string;
+  parceiros?: { razao_social: string } | null;
 }
 
-function clienteToRow(c: Cliente): Omit<ClienteRow, "created_at" | "updated_at"> {
+function clienteToRow(c: Cliente): Omit<ClienteRow, "created_at" | "updated_at" | "parceiros"> {
   return {
     id: c.id,
     nome: c.nome,
@@ -483,6 +486,7 @@ function clienteToRow(c: Cliente): Omit<ClienteRow, "created_at" | "updated_at">
     status_pipeline: c.statusPipeline || "lead",
     origem: c.origem || "",
     responsavel_id: c.responsavelId || null,
+    parceiro_id: c.parceiroId || null,
   };
 }
 
@@ -502,6 +506,8 @@ function rowToCliente(r: ClienteRow): Cliente {
     statusPipeline: (r.status_pipeline as StatusPipeline) || "lead",
     origem: r.origem || "",
     responsavelId: r.responsavel_id || undefined,
+    parceiroId: r.parceiro_id || undefined,
+    parceiroNome: r.parceiros?.razao_social || undefined,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   };
@@ -514,7 +520,7 @@ function rowToCliente(r: ClienteRow): Cliente {
 export async function getAllClientes(): Promise<Cliente[]> {
   const { data, error } = await supabase
     .from("clientes")
-    .select("*")
+    .select("*, parceiros(razao_social)")
     .order("nome", { ascending: true });
 
   if (error) {
@@ -576,6 +582,110 @@ export async function getRecentClientes(limit = 5): Promise<Cliente[]> {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Mapeamento Parceiro ↔ Row                                          */
+/* ------------------------------------------------------------------ */
+
+interface ParceiroRow {
+  id: string;
+  razao_social: string;
+  cpf_cnpj: string;
+  endereco: string;
+  email: string;
+  telefone: string;
+  dados_bancarios: string;
+  percentual_parceria: number;
+  observacoes: string;
+  ativo: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+function parceiroToRow(p: Parceiro): Omit<ParceiroRow, "created_at" | "updated_at"> {
+  return {
+    id: p.id,
+    razao_social: p.razaoSocial,
+    cpf_cnpj: p.cpfCnpj || "",
+    endereco: p.endereco || "",
+    email: p.email || "",
+    telefone: p.telefone || "",
+    dados_bancarios: p.dadosBancarios || "",
+    percentual_parceria: p.percentualParceria ?? 0,
+    observacoes: p.observacoes || "",
+    ativo: p.ativo ?? true,
+  };
+}
+
+function rowToParceiro(r: ParceiroRow): Parceiro {
+  return {
+    id: r.id,
+    razaoSocial: r.razao_social || "",
+    cpfCnpj: r.cpf_cnpj || "",
+    endereco: r.endereco || "",
+    email: r.email || "",
+    telefone: r.telefone || "",
+    dadosBancarios: r.dados_bancarios || "",
+    percentualParceria: r.percentual_parceria ?? 0,
+    observacoes: r.observacoes || "",
+    ativo: r.ativo ?? true,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/*  API pública — Parceiros                                            */
+/* ------------------------------------------------------------------ */
+
+export async function getAllParceiros(): Promise<Parceiro[]> {
+  const { data, error } = await supabase
+    .from("parceiros")
+    .select("*")
+    .order("razao_social", { ascending: true });
+
+  if (error) {
+    console.error("[Store] Erro ao carregar parceiros:", error);
+    return [];
+  }
+
+  return (data || []).map((r) => rowToParceiro(r as ParceiroRow));
+}
+
+export async function getParceiro(id: string): Promise<Parceiro | null> {
+  const { data, error } = await supabase
+    .from("parceiros")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[Store] Erro ao carregar parceiro:", error);
+    return null;
+  }
+
+  return data ? rowToParceiro(data as ParceiroRow) : null;
+}
+
+export async function saveParceiro(p: Parceiro): Promise<void> {
+  const row = parceiroToRow(p);
+
+  const { error } = await supabase
+    .from("parceiros")
+    .upsert(row, { onConflict: "id" });
+
+  if (error) {
+    console.error("[Store] Erro ao salvar parceiro:", error);
+  }
+}
+
+export async function deleteParceiro(id: string): Promise<void> {
+  const { error } = await supabase.from("parceiros").delete().eq("id", id);
+
+  if (error) {
+    console.error("[Store] Erro ao excluir parceiro:", error);
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /*  Mapeamento Contrato ↔ Row                                          */
 /* ------------------------------------------------------------------ */
 
@@ -597,14 +707,17 @@ interface ContratoRow {
   zapsign_signer_name: string | null;
   zapsign_signer_email: string | null;
   status: string;
+  quantidade_parcelas: number;
+  datas_pagamento: string[] | null;
   caso_ia_id: string | null;
   created_at: string;
   updated_at: string;
   // Join fields
   clientes?: { nome: string } | null;
+  parceiros?: { razao_social: string } | null;
 }
 
-function contratoToRow(c: Contrato): Omit<ContratoRow, "created_at" | "updated_at" | "clientes"> {
+function contratoToRow(c: Contrato): Omit<ContratoRow, "created_at" | "updated_at" | "clientes" | "parceiros"> {
   return {
     id: c.id,
     cliente_id: c.clienteId,
@@ -623,6 +736,8 @@ function contratoToRow(c: Contrato): Omit<ContratoRow, "created_at" | "updated_a
     zapsign_signer_name: c.zapsignSignerName || null,
     zapsign_signer_email: c.zapsignSignerEmail || null,
     status: c.status || "rascunho",
+    quantidade_parcelas: c.quantidadeParcelas || 1,
+    datas_pagamento: c.datasPagamento?.length ? c.datasPagamento : null,
     caso_ia_id: c.casoIaId || null,
   };
 }
@@ -646,8 +761,11 @@ function rowToContrato(r: ContratoRow): Contrato {
     zapsignSignerName: r.zapsign_signer_name || undefined,
     zapsignSignerEmail: r.zapsign_signer_email || undefined,
     status: (r.status as ContratoStatus) || "rascunho",
+    quantidadeParcelas: r.quantidade_parcelas || 1,
+    datasPagamento: (r.datas_pagamento as string[]) || [],
     casoIaId: r.caso_ia_id || undefined,
     clienteNome: r.clientes?.nome || undefined,
+    parceiroNome: r.parceiros?.razao_social || undefined,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   };
@@ -660,7 +778,7 @@ function rowToContrato(r: ContratoRow): Contrato {
 export async function getAllContratos(): Promise<Contrato[]> {
   const { data, error } = await supabase
     .from("contratos")
-    .select("*, clientes(nome)")
+    .select("*, clientes(nome), parceiros(razao_social)")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -674,7 +792,7 @@ export async function getAllContratos(): Promise<Contrato[]> {
 export async function getContrato(id: string): Promise<Contrato | null> {
   const { data, error } = await supabase
     .from("contratos")
-    .select("*, clientes(nome)")
+    .select("*, clientes(nome), parceiros(razao_social)")
     .eq("id", id)
     .maybeSingle();
 
@@ -709,7 +827,7 @@ export async function deleteContrato(id: string): Promise<void> {
 export async function getContratosByCliente(clienteId: string): Promise<Contrato[]> {
   const { data, error } = await supabase
     .from("contratos")
-    .select("*, clientes(nome)")
+    .select("*, clientes(nome), parceiros(razao_social)")
     .eq("cliente_id", clienteId)
     .order("created_at", { ascending: false });
 

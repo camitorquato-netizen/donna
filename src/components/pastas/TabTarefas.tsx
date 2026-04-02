@@ -6,8 +6,9 @@ import {
   TarefaStatus,
   TAREFA_PRIORIDADE_LABELS,
   TarefaPrioridade,
+  Usuario,
 } from "@/lib/types";
-import { getTarefasByPasta, deleteTarefa } from "@/lib/store";
+import { getTarefasByPasta, deleteTarefa, getAllUsuarios } from "@/lib/store";
 import Btn from "@/components/Btn";
 import Badge from "@/components/Badge";
 import TarefaModal from "./TarefaModal";
@@ -34,12 +35,17 @@ export default function TabTarefas({ pastaId }: TabTarefasProps) {
   const [tarefas, setTarefas] = useState<Tarefa[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<Tarefa | null | "new">(null);
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getTarefasByPasta(pastaId);
+      const [data, users] = await Promise.all([
+        getTarefasByPasta(pastaId),
+        getAllUsuarios(false),
+      ]);
       setTarefas(data);
+      setUsuarios(users);
     } catch (err) {
       console.error("[TabTarefas] Erro:", err);
     } finally {
@@ -50,6 +56,11 @@ export default function TabTarefas({ pastaId }: TabTarefasProps) {
   useEffect(() => {
     load();
   }, [load]);
+
+  function getUsuarioNome(id?: string) {
+    if (!id) return null;
+    return usuarios.find((u) => u.id === id)?.nome || null;
+  }
 
   async function handleDelete(id: string) {
     await deleteTarefa(id);
@@ -115,6 +126,9 @@ export default function TabTarefas({ pastaId }: TabTarefasProps) {
                         Prazo:{" "}
                         {new Date(t.prazo + "T00:00:00").toLocaleDateString("pt-BR")}
                       </span>
+                    )}
+                    {getUsuarioNome(t.responsavelId) && (
+                      <span>Resp: {getUsuarioNome(t.responsavelId)}</span>
                     )}
                   </div>
                 </div>
