@@ -39,7 +39,7 @@ export const zapsignConfig = {
   },
 
   /** Nome do remetente em todos os canais */
-  senderName: "Escritório Patrimonial",
+  senderName: "Silveira Torquato Reverbel Advogados",
 
   /**
    * Filtro de documentos — só processa docs cujo nome contenha
@@ -47,10 +47,7 @@ export const zapsignConfig = {
    * Configurável via env var (separado por vírgula).
    * Se vazio, processa TODOS os documentos.
    */
-  docFilter: (
-    process.env.ZAPSIGN_DOC_FILTER ||
-    "patrimonial,planejamento,holding,sucessão,sucessao"
-  )
+  docFilter: (process.env.ZAPSIGN_DOC_FILTER || "")
     .split(",")
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean),
