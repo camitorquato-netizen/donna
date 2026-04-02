@@ -5,6 +5,7 @@ import { Contrato, ContratoStatus, CONTRATO_STATUS_LABELS, CONTRATO_OBJETOS, cre
 import { saveContrato } from "@/lib/store";
 import Btn from "@/components/Btn";
 import ClienteSelector from "@/components/ClienteSelector";
+import ParceiroSelector from "@/components/ParceiroSelector";
 
 export default function NovoContratoPage() {
   const router = useRouter();
@@ -58,15 +59,21 @@ export default function NovoContratoPage() {
       </div>
 
       <div className="space-y-6">
-        {/* Cliente */}
+        {/* Vinculação */}
         <section className="bg-white border border-st-border rounded-xl p-4 sm:p-5">
           <h2 className="font-serif font-bold text-st-dark mb-4">
             Vinculação
           </h2>
-          <ClienteSelector
-            value={contrato.clienteId}
-            onChange={(id) => set("clienteId", id)}
-          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <ClienteSelector
+              value={contrato.clienteId}
+              onChange={(id) => set("clienteId", id)}
+            />
+            <ParceiroSelector
+              value={contrato.parceiroId || ""}
+              onChange={(id) => set("parceiroId", id || undefined)}
+            />
+          </div>
         </section>
 
         {/* Dados do Contrato */}

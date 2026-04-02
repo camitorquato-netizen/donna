@@ -5,6 +5,7 @@ import { Contrato, ContratoStatus, CONTRATO_STATUS_LABELS, CONTRATO_OBJETOS, Lan
 import { getContrato, saveContrato, saveLancamento } from "@/lib/store";
 import Btn from "@/components/Btn";
 import ClienteSelector from "@/components/ClienteSelector";
+import ParceiroSelector from "@/components/ParceiroSelector";
 import { useAuth } from "@/contexts/AuthContext";
 
 const inputClass =
@@ -142,16 +143,23 @@ export default function ContratoDetailPage({
       </div>
 
       <div className="space-y-6">
-        {/* Cliente */}
+        {/* Vinculação */}
         <section className="bg-white border border-st-border rounded-xl p-4 sm:p-5">
           <h2 className="font-serif font-bold text-st-dark mb-4">
             Vinculação
           </h2>
-          <ClienteSelector
-            value={contrato.clienteId}
-            onChange={(id) => set("clienteId", id)}
-            disabled={dis}
-          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <ClienteSelector
+              value={contrato.clienteId}
+              onChange={(id) => set("clienteId", id)}
+              disabled={dis}
+            />
+            <ParceiroSelector
+              value={contrato.parceiroId || ""}
+              onChange={(id) => set("parceiroId", id || undefined)}
+              disabled={dis}
+            />
+          </div>
         </section>
 
         {/* Dados do Contrato */}

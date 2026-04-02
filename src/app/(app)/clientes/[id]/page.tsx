@@ -18,7 +18,6 @@ import {
 } from "@/lib/store";
 import Btn from "@/components/Btn";
 import Badge from "@/components/Badge";
-import ParceiroSelector from "@/components/ParceiroSelector";
 import { useAuth } from "@/contexts/AuthContext";
 
 const inputClass =
@@ -359,19 +358,12 @@ export default function ClienteDetailPage({
           </div>
         </section>
 
-        {/* Parceiro e Origem */}
+        {/* Origem e Pipeline */}
         <section className="bg-white border border-st-border rounded-xl p-4 sm:p-5">
           <h2 className="font-serif font-bold text-st-dark mb-4">
-            Parceiro e Origem
+            Origem e Pipeline
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <ParceiroSelector
-                value={cliente.parceiroId || ""}
-                onChange={(parceiroId) => set("parceiroId", parceiroId || undefined)}
-                disabled={dis}
-              />
-            </div>
             <div>
               <label className="block text-xs font-sans text-st-muted mb-1">
                 Origem
