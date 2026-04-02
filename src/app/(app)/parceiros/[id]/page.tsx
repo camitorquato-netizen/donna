@@ -41,10 +41,15 @@ export default function ParceiroDetailPage({
 
   async function handleSave() {
     if (!parceiro) return;
-    await saveParceiro(parceiro);
-    setIsEditing(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    try {
+      await saveParceiro(parceiro);
+      setIsEditing(false);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      console.error("[Parceiro] Erro ao salvar:", err);
+      alert("Erro ao salvar parceiro. Verifique o console.");
+    }
   }
 
   async function handleDelete() {

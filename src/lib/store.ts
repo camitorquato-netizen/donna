@@ -673,6 +673,7 @@ export async function getParceiro(id: string): Promise<Parceiro | null> {
 
 export async function saveParceiro(p: Parceiro): Promise<void> {
   const row = parceiroToRow(p);
+  console.log("[Store] Salvando parceiro:", JSON.stringify(row));
 
   const { error } = await supabase
     .from("parceiros")
@@ -680,7 +681,9 @@ export async function saveParceiro(p: Parceiro): Promise<void> {
 
   if (error) {
     console.error("[Store] Erro ao salvar parceiro:", error);
+    throw new Error(`Erro ao salvar parceiro: ${error.message}`);
   }
+  console.log("[Store] Parceiro salvo com sucesso");
 }
 
 export async function deleteParceiro(id: string): Promise<void> {
