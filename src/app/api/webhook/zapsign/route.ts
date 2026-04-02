@@ -98,10 +98,13 @@ export async function POST(req: NextRequest) {
     const payload: ZapSignPayload = await req.json();
     const eventType = payload.event_type || "";
 
-    console.log(`[ZapSign] Evento recebido: ${eventType}`);
+    console.log(`[ZapSign] Evento: "${eventType}" | Doc: "${payload.name || payload.doc?.name || "?"}" | Keys: ${Object.keys(payload).join(",")}`);
 
-    // 3) Filtrar apenas eventos de assinatura
+    // 3) Aceitar QUALQUER evento que tenha dados de documento assinado
+    // (ZapSign pode usar nomes variados: doc_signed, signed, signer_signed, etc.)
+    // Se não for evento de assinatura, ignorar
     if (!VALID_EVENTS.has(eventType)) {
+      console.log(`[ZapSign] Evento "${eventType}" ignorado. Payload sample: ${JSON.stringify(payload).slice(0, 500)}`);
       return NextResponse.json({
         status: "ignored",
         reason: `Evento "${eventType}" não requer processamento`,
