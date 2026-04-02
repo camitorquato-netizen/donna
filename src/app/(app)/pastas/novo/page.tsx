@@ -12,7 +12,10 @@ export default function NovaPastaPage() {
   const [saving, setSaving] = useState(false);
 
   const preClienteId = searchParams.get("clienteId") || "";
+  const preContratoId = searchParams.get("contratoId") || "";
   const preTitulo = searchParams.get("titulo") || "";
+  const preClienteNome = searchParams.get("clienteNome") || "";
+  const preContratoTitulo = searchParams.get("contratoTitulo") || "";
 
   const id = useState(() => crypto.randomUUID())[0];
   const numero = useState(() => {
@@ -25,6 +28,7 @@ export default function NovaPastaPage() {
     id,
     numero,
     clienteId: preClienteId,
+    contratoId: preContratoId || undefined,
     titulo: preTitulo,
     tipo: "servico",
     tipoServico: "",
@@ -70,6 +74,16 @@ export default function NovaPastaPage() {
           Criar Pasta
         </Btn>
       </div>
+
+      {(preClienteNome || preContratoTitulo) && (
+        <div className="bg-st-gold/10 border border-st-gold/30 rounded-xl p-4 mb-6">
+          <p className="text-sm font-sans text-st-dark">
+            {preClienteNome && <>Cliente: <strong>{preClienteNome}</strong></>}
+            {preClienteNome && preContratoTitulo && <> | </>}
+            {preContratoTitulo && <>Contrato: <strong>{preContratoTitulo}</strong></>}
+          </p>
+        </div>
+      )}
 
       <TabGeral pasta={pasta} onChange={set} isEditing={true} />
     </div>

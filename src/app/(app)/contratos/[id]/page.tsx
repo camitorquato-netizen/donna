@@ -277,6 +277,33 @@ export default function ContratoDetailPage({
           </div>
         </section>
 
+        {/* Link do Contrato */}
+        <section className="bg-white border border-st-border rounded-xl p-4 sm:p-5">
+          <h2 className="font-serif font-bold text-st-dark mb-4">
+            Link do Contrato
+          </h2>
+          {isEditing ? (
+            <input
+              type="url"
+              value={contrato.arquivoUrl || ""}
+              onChange={(e) => set("arquivoUrl", e.target.value)}
+              placeholder="https://..."
+              className={inputClass}
+            />
+          ) : contrato.arquivoUrl ? (
+            <a
+              href={contrato.arquivoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-st-gold font-sans hover:underline break-all"
+            >
+              {contrato.arquivoUrl}
+            </a>
+          ) : (
+            <p className="text-sm text-st-muted font-sans">Nenhum link cadastrado.</p>
+          )}
+        </section>
+
         {/* Parcelas */}
         <section className="bg-white border border-st-border rounded-xl p-4 sm:p-5">
           <h2 className="font-serif font-bold text-st-dark mb-4">
@@ -400,16 +427,27 @@ export default function ContratoDetailPage({
                 Pasta de Trabalho
               </h2>
               <button
-                onClick={() =>
-                  router.push(
-                    `/pastas/novo?contratoId=${id}&clienteId=${contrato.clienteId}&titulo=${encodeURIComponent(contrato.titulo || "")}`
-                  )
-                }
+                onClick={() => {
+                  const params = new URLSearchParams({
+                    contratoId: id,
+                    clienteId: contrato.clienteId || "",
+                    titulo: contrato.titulo || "",
+                    clienteNome: contrato.clienteNome || "",
+                    contratoTitulo: contrato.titulo || "",
+                  });
+                  router.push(`/pastas/novo?${params.toString()}`);
+                }}
                 className="text-sm text-st-gold font-sans hover:underline cursor-pointer"
               >
                 + Criar Pasta para este Contrato
               </button>
             </div>
+            {contrato.clienteNome && (
+              <p className="text-xs text-st-muted font-sans mt-2">
+                Cliente: <strong>{contrato.clienteNome}</strong>
+                {contrato.titulo && <> | Contrato: <strong>{contrato.titulo}</strong></>}
+              </p>
+            )}
           </section>
         )}
       </div>
