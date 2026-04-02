@@ -98,8 +98,7 @@ export async function POST(req: NextRequest) {
     const payload: ZapSignPayload = await req.json();
     const eventType = payload.event_type || "";
 
-    // DEBUG: log full payload to understand ZapSign format
-    console.log(`[ZapSign] FULL PAYLOAD: ${JSON.stringify(payload).slice(0, 2000)}`);
+    console.log(`[ZapSign] Evento: ${eventType}`);
 
     // 3) Aceitar qualquer evento de assinatura
     if (!VALID_EVENTS.has(eventType)) {
