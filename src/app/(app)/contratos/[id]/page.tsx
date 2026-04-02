@@ -2,7 +2,7 @@
 import { use, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Contrato, ContratoStatus, CONTRATO_STATUS_LABELS, CONTRATO_OBJETOS, Lancamento, Pasta } from "@/lib/types";
-import { getContrato, saveContrato, saveLancamento, getPastasByContrato, getPastaByContrato, getParceiro } from "@/lib/store";
+import { getContrato, saveContrato, saveLancamento, getPastasByContrato, getPastaByContrato, getParceiro, deleteContrato } from "@/lib/store";
 import Btn from "@/components/Btn";
 import ClienteSelector from "@/components/ClienteSelector";
 import ParceiroSelector from "@/components/ParceiroSelector";
@@ -135,6 +135,12 @@ export default function ContratoDetailPage({
     setIsEditing(false);
   }
 
+  async function handleDelete() {
+    if (!window.confirm("Tem certeza que deseja excluir?")) return;
+    await deleteContrato(id);
+    router.push("/contratos");
+  }
+
   const dis = !isEditing;
 
   if (loading) {
@@ -183,7 +189,17 @@ export default function ContratoDetailPage({
             <Btn variant="gold" onClick={handleSave} loading={saving}>Salvar</Btn>
           </div>
         ) : (
-          !isReadOnly && <Btn variant="gold" onClick={() => setIsEditing(true)}>Editar</Btn>
+          !isReadOnly && (
+            <div className="flex gap-2 shrink-0 items-center">
+              <Btn variant="gold" onClick={() => setIsEditing(true)}>Editar</Btn>
+              <button
+                onClick={handleDelete}
+                className="text-sm text-red-500 font-sans hover:underline cursor-pointer"
+              >
+                Excluir
+              </button>
+            </div>
+          )
         )}
       </div>
 

@@ -10,7 +10,7 @@ import {
   PASTA_STATUS_LABELS,
   PastaStatus,
 } from "@/lib/types";
-import { getPasta, savePasta, getProcessoByPasta } from "@/lib/store";
+import { getPasta, savePasta, getProcessoByPasta, deletePasta } from "@/lib/store";
 import Btn from "@/components/Btn";
 import Badge from "@/components/Badge";
 import TabGeral from "@/components/pastas/TabGeral";
@@ -91,6 +91,12 @@ export default function PastaDetailPage({
   async function handleCancel() {
     await load();
     setIsEditing(false);
+  }
+
+  async function handleDelete() {
+    if (!window.confirm("Tem certeza que deseja excluir?")) return;
+    await deletePasta(id);
+    router.push("/pastas");
   }
 
   if (loading) {
@@ -235,7 +241,17 @@ export default function PastaDetailPage({
                 <Btn variant="gold" onClick={handleSave} loading={saving}>Salvar</Btn>
               </div>
             ) : (
-              !isReadOnly && <Btn variant="gold" onClick={() => setIsEditing(true)}>Editar</Btn>
+              !isReadOnly && (
+                <div className="flex gap-2 shrink-0 items-center">
+                  <Btn variant="gold" onClick={() => setIsEditing(true)}>Editar</Btn>
+                  <button
+                    onClick={handleDelete}
+                    className="text-sm text-red-500 font-sans hover:underline cursor-pointer"
+                  >
+                    Excluir
+                  </button>
+                </div>
+              )
             )
           )}
         </div>
