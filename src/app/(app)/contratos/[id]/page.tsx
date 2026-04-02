@@ -179,37 +179,62 @@ export default function ContratoDetailPage({
       </button>
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-6 gap-3">
-        <h1 className="font-serif text-xl sm:text-2xl font-bold text-st-dark truncate">
-          {contrato.titulo || "Novo Contrato"}
-        </h1>
-        {isEditing ? (
-          <div className="flex gap-2 shrink-0">
-            <Btn variant="ghost" onClick={handleCancel}>Cancelar</Btn>
-            <Btn variant="gold" onClick={handleSave} loading={saving}>Salvar</Btn>
+      <div className="mb-6">
+        <div className="flex items-start justify-between gap-3 mb-2">
+          <div className="min-w-0">
+            <h1 className="font-serif text-xl sm:text-2xl font-bold text-st-dark">
+              {contrato.titulo || "Novo Contrato"}
+            </h1>
+            {!isEditing && (contrato.clienteNome || contrato.parceiroNome) && (
+              <p className="text-sm text-st-muted font-sans mt-2">
+                {contrato.clienteNome && (
+                  <>
+                    Cliente:{" "}
+                    <button onClick={() => router.push(`/clientes/${contrato.clienteId}`)} className="font-bold text-st-gold hover:underline cursor-pointer">
+                      {contrato.clienteNome.toUpperCase()}
+                    </button>
+                  </>
+                )}
+                {contrato.clienteNome && contrato.parceiroNome && <span className="mx-2">|</span>}
+                {contrato.parceiroNome && (
+                  <>
+                    Parceiro:{" "}
+                    <button onClick={() => router.push(`/parceiros/${contrato.parceiroId}`)} className="font-bold text-st-gold hover:underline cursor-pointer">
+                      {contrato.parceiroNome.toUpperCase()}
+                    </button>
+                  </>
+                )}
+              </p>
+            )}
           </div>
-        ) : (
-          !isReadOnly && (
-            <div className="flex gap-2 shrink-0 items-center">
-              <Btn variant="gold" onClick={() => setIsEditing(true)}>Editar</Btn>
-              <button
-                onClick={handleDelete}
-                className="text-sm text-red-500 font-sans hover:underline cursor-pointer"
-              >
-                Excluir
-              </button>
+          {isEditing ? (
+            <div className="flex gap-2 shrink-0">
+              <Btn variant="ghost" onClick={handleCancel}>Cancelar</Btn>
+              <Btn variant="gold" onClick={handleSave} loading={saving}>Salvar</Btn>
             </div>
-          )
-        )}
+          ) : (
+            !isReadOnly && (
+              <div className="flex gap-2 shrink-0 items-center">
+                <Btn variant="gold" onClick={() => setIsEditing(true)}>Editar</Btn>
+                <button
+                  onClick={handleDelete}
+                  className="text-sm text-red-500 font-sans hover:underline cursor-pointer"
+                >
+                  Excluir
+                </button>
+              </div>
+            )
+          )}
+        </div>
       </div>
 
       <div className="space-y-6">
-        {/* Vinculação */}
-        <section className="bg-white border border-st-border rounded-xl p-4 sm:p-5">
-          <h2 className="font-serif font-bold text-st-dark mb-4">
-            Vinculação
-          </h2>
-          {isEditing ? (
+        {/* Vinculação — só aparece ao editar */}
+        {isEditing && (
+          <section className="bg-white border border-st-border rounded-xl p-4 sm:p-5">
+            <h2 className="font-serif font-bold text-st-dark mb-4">
+              Vinculação
+            </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <ClienteSelector
                 value={contrato.clienteId}
@@ -224,41 +249,8 @@ export default function ContratoDetailPage({
                 returnTo={`/contratos/${id}`}
               />
             </div>
-          ) : (
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-sans text-st-muted mb-1">
-                  Cliente
-                </label>
-                {contrato.clienteId ? (
-                  <button
-                    onClick={() => router.push(`/clientes/${contrato.clienteId}`)}
-                    className="text-sm font-sans font-bold text-st-gold hover:underline cursor-pointer"
-                  >
-                    {(contrato.clienteNome || "Ver cliente").toUpperCase()}
-                  </button>
-                ) : (
-                  <p className="text-sm text-st-muted font-sans">Nenhum cliente vinculado</p>
-                )}
-              </div>
-              <div>
-                <label className="block text-xs font-sans text-st-muted mb-1">
-                  Parceiro
-                </label>
-                {contrato.parceiroId ? (
-                  <button
-                    onClick={() => router.push(`/parceiros/${contrato.parceiroId}`)}
-                    className="text-sm font-sans font-bold text-st-gold hover:underline cursor-pointer"
-                  >
-                    {(contrato.parceiroNome || "Ver parceiro").toUpperCase()}
-                  </button>
-                ) : (
-                  <p className="text-sm text-st-muted font-sans">Nenhum parceiro vinculado</p>
-                )}
-              </div>
-            </div>
-          )}
-        </section>
+          </section>
+        )}
 
         {/* Dados do Contrato */}
         <section className="bg-white border border-st-border rounded-xl p-4 sm:p-5">

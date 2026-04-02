@@ -20,23 +20,25 @@ export default function TabGeral({ pasta, onChange, isEditing = false }: TabGera
 
   return (
     <div className="space-y-6">
-      {/* Vinculação */}
-      <section className="bg-white border border-st-border rounded-xl p-4 sm:p-5">
-        <h2 className="font-serif font-bold text-st-dark mb-4">Vinculação</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <ClienteSelector
-            value={pasta.clienteId}
-            onChange={(id) => onChange("clienteId", id)}
-            disabled={dis}
-          />
-          <ContratoSelector
-            value={pasta.contratoId || ""}
-            onChange={(id) => onChange("contratoId", id || undefined)}
-            clienteId={pasta.clienteId || undefined}
-            disabled={dis}
-          />
-        </div>
-      </section>
+      {/* Vinculação — só aparece ao editar */}
+      {isEditing && (
+        <section className="bg-white border border-st-border rounded-xl p-4 sm:p-5">
+          <h2 className="font-serif font-bold text-st-dark mb-4">Vinculação</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <ClienteSelector
+              value={pasta.clienteId}
+              onChange={(id) => onChange("clienteId", id)}
+              disabled={false}
+            />
+            <ContratoSelector
+              value={pasta.contratoId || ""}
+              onChange={(id) => onChange("contratoId", id || undefined)}
+              clienteId={pasta.clienteId || undefined}
+              disabled={false}
+            />
+          </div>
+        </section>
+      )}
 
       {/* Dados da Pasta */}
       <section className="bg-white border border-st-border rounded-xl p-4 sm:p-5">
