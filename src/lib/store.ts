@@ -2057,6 +2057,19 @@ export async function getTarefasByPasta(pastaId: string): Promise<Tarefa[]> {
   return (data || []).map((r) => rowToTarefa(r as TarefaRow));
 }
 
+export async function getAllTarefas(): Promise<(Tarefa & { pastaTitulo?: string; pastaNumero?: string })[]> {
+  const { data, error } = await supabase
+    .from("tarefas")
+    .select("*, pastas(titulo, numero)")
+    .order("prazo", { ascending: true, nullsFirst: false });
+  if (error) { console.error("[Store] Erro todas tarefas:", error); return []; }
+  return (data || []).map((r: TarefaRow & { pastas?: { titulo: string; numero: string } | null }) => ({
+    ...rowToTarefa(r),
+    pastaTitulo: r.pastas?.titulo || undefined,
+    pastaNumero: r.pastas?.numero || undefined,
+  }));
+}
+
 export async function saveTarefa(t: Tarefa): Promise<void> {
   const { error } = await supabase.from("tarefas").upsert(tarefaToRow(t), { onConflict: "id" });
   if (error) console.error("[Store] Erro salvar tarefa:", error);
