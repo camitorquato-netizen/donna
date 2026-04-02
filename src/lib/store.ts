@@ -38,6 +38,7 @@ import {
   WfPatrimonialAnalise,
   WfPatrimonialAnaliseTipo,
   WfPatrimonialSubtarefa,
+  Historico,
 } from "./types";
 import { supabase } from "./supabase";
 
@@ -1136,6 +1137,7 @@ export async function deletePasta(id: string): Promise<void> {
   await supabase.from("tarefas").delete().eq("pasta_id", id);
   await supabase.from("anotacoes").delete().eq("pasta_id", id);
   await supabase.from("publicacoes").delete().eq("pasta_id", id);
+  await supabase.from("historico").delete().eq("pasta_id", id);
   await supabase.from("documentos").delete().eq("pasta_id", id);
   await supabase.from("processos").delete().eq("pasta_id", id);
   const { error } = await supabase.from("pastas").delete().eq("id", id);
@@ -2220,6 +2222,59 @@ export async function deletePilotoRct(id: string): Promise<void> {
 /* ------------------------------------------------------------------ */
 /*  Lançamentos por Pasta                                              */
 /* ------------------------------------------------------------------ */
+
+/* ------------------------------------------------------------------ */
+/*  Histórico                                                           */
+/* ------------------------------------------------------------------ */
+
+interface HistoricoRow {
+  id: string;
+  pasta_id: string;
+  usuario_id: string;
+  texto: string;
+  link: string | null;
+  created_at: string;
+  usuarios?: { nome: string } | null;
+}
+
+function rowToHistorico(r: HistoricoRow): Historico {
+  return {
+    id: r.id,
+    pastaId: r.pasta_id,
+    usuarioId: r.usuario_id,
+    usuarioNome: r.usuarios?.nome || undefined,
+    texto: r.texto,
+    link: r.link || undefined,
+    createdAt: r.created_at,
+  };
+}
+
+export async function getHistoricoByPasta(pastaId: string): Promise<Historico[]> {
+  const { data, error } = await supabase
+    .from("historico")
+    .select("*, usuarios(nome)")
+    .eq("pasta_id", pastaId)
+    .order("created_at", { ascending: false });
+  if (error) { console.error("[Store] Erro historico:", error); return []; }
+  return (data || []).map((r) => rowToHistorico(r as HistoricoRow));
+}
+
+export async function saveHistorico(h: Historico): Promise<void> {
+  const row = {
+    id: h.id,
+    pasta_id: h.pastaId,
+    usuario_id: h.usuarioId,
+    texto: h.texto,
+    link: h.link || null,
+  };
+  const { error } = await supabase.from("historico").upsert(row, { onConflict: "id" });
+  if (error) throw new Error(`Erro ao salvar histórico: ${error.message}`);
+}
+
+export async function deleteHistorico(id: string): Promise<void> {
+  const { error } = await supabase.from("historico").delete().eq("id", id);
+  if (error) throw new Error(`Erro ao excluir histórico: ${error.message}`);
+}
 
 export async function getLancamentosByPasta(pastaId: string): Promise<Lancamento[]> {
   const { data, error } = await supabase

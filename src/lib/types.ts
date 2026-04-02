@@ -773,7 +773,22 @@ export type PastaTabKey =
   | "workflow_planejamento"
   | "workflow_patrimonial"
   | "compensacoes"
-  | "financeiro";
+  | "financeiro"
+  | "historico";
+
+/* ------------------------------------------------------------------ */
+/*  Histórico                                                           */
+/* ------------------------------------------------------------------ */
+
+export interface Historico {
+  id: string;
+  pastaId: string;
+  usuarioId: string;
+  usuarioNome?: string; // join
+  texto: string;
+  link?: string;
+  createdAt?: string;
+}
 
 export interface PastaTabConfig {
   key: PastaTabKey;
@@ -793,6 +808,7 @@ export function getPastaTabsConfig(
       tabs.push({ key: "publicacoes", label: "Publicações" });
     }
     tabs.push({ key: "tarefas", label: "Tarefas" });
+    tabs.push({ key: "historico", label: "Histórico" });
     tabs.push({ key: "financeiro", label: "Financeiro" });
     return tabs;
   }
@@ -803,6 +819,7 @@ export function getPastaTabsConfig(
       { key: "creditos", label: "Créditos" },
       { key: "workflow", label: "Workflow" },
       { key: "compensacoes", label: "Compensações" },
+      { key: "historico", label: "Histórico" },
       { key: "financeiro", label: "Financeiro" },
     ];
   }
@@ -812,6 +829,7 @@ export function getPastaTabsConfig(
       { key: "geral", label: "Geral" },
       { key: "workflow_planejamento", label: "Workflow" },
       { key: "tarefas", label: "Tarefas" },
+      { key: "historico", label: "Histórico" },
       { key: "financeiro", label: "Financeiro" },
     ];
   }
@@ -821,6 +839,7 @@ export function getPastaTabsConfig(
       { key: "geral", label: "Geral" },
       { key: "workflow_patrimonial", label: "Workflow" },
       { key: "tarefas", label: "Tarefas" },
+      { key: "historico", label: "Histórico" },
       { key: "financeiro", label: "Financeiro" },
     ];
   }
@@ -829,6 +848,7 @@ export function getPastaTabsConfig(
   return [
     { key: "geral", label: "Geral" },
     { key: "tarefas", label: "Tarefas" },
+    { key: "historico", label: "Histórico" },
     { key: "financeiro", label: "Financeiro" },
   ];
 }

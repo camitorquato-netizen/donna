@@ -23,6 +23,7 @@ import TabCompensacoes from "@/components/pastas/TabCompensacoes";
 import TabRadiografia from "@/components/pastas/TabRadiografia";
 import TabFinanceiro from "@/components/pastas/TabFinanceiro";
 import TabWorkflowPlanejamento from "@/components/pastas/TabWorkflowPlanejamento";
+import TabHistorico from "@/components/pastas/TabHistorico";
 import TabWorkflowPatrimonial from "@/components/pastas/TabWorkflowPatrimonial";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -172,6 +173,8 @@ export default function PastaDetailPage({
             clienteId={pasta!.clienteId}
           />
         );
+      case "historico":
+        return <TabHistorico pastaId={pasta!.id} />;
       case "financeiro":
         return (
           <TabFinanceiro
