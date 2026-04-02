@@ -37,6 +37,7 @@ export default function TarefasPage() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState<Filtro>("minhas");
+  const [filtroResponsavel, setFiltroResponsavel] = useState<string>("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -63,6 +64,9 @@ export default function TarefasPage() {
   const hoje = new Date().toISOString().slice(0, 10);
 
   const filtradas = tarefas.filter((t) => {
+    // Filtro por responsável
+    if (filtroResponsavel && t.responsavelId !== filtroResponsavel) return false;
+
     if (filtro === "minhas") {
       return (
         t.responsavelId === usuario?.id ||
@@ -164,10 +168,22 @@ export default function TarefasPage() {
         </button>
       </div>
 
-      {/* Lista */}
-      <p className="text-sm text-st-muted font-sans mb-3">
-        {filtradas.length} tarefa{filtradas.length !== 1 ? "s" : ""}
-      </p>
+      {/* Filtro por responsável */}
+      <div className="flex items-center gap-3 mb-4">
+        <select
+          value={filtroResponsavel}
+          onChange={(e) => setFiltroResponsavel(e.target.value)}
+          className="border border-st-border rounded-lg px-3 py-2 text-sm font-sans focus:outline-none focus:border-st-gold bg-white"
+        >
+          <option value="">Todos os responsáveis</option>
+          {usuarios.map((u) => (
+            <option key={u.id} value={u.id}>{u.nome}</option>
+          ))}
+        </select>
+        <p className="text-sm text-st-muted font-sans">
+          {filtradas.length} tarefa{filtradas.length !== 1 ? "s" : ""}
+        </p>
+      </div>
 
       {filtradas.length === 0 ? (
         <div className="bg-white border border-st-border rounded-xl p-8 text-center">
