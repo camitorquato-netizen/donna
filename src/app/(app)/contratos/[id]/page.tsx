@@ -2,7 +2,7 @@
 import { use, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Contrato, ContratoStatus, CONTRATO_STATUS_LABELS, CONTRATO_OBJETOS, Lancamento } from "@/lib/types";
-import { getContrato, saveContrato, saveLancamento } from "@/lib/store";
+import { getContrato, saveContrato, saveLancamento, getPastaByContrato, getParceiro } from "@/lib/store";
 import Btn from "@/components/Btn";
 import ClienteSelector from "@/components/ClienteSelector";
 import ParceiroSelector from "@/components/ParceiroSelector";
@@ -57,23 +57,63 @@ export default function ContratoDetailPage({
 
       // Auto-criar lançamentos financeiros se há parcelas definidas
       if (contrato.quantidadeParcelas > 0 && contrato.valor && contrato.datasPagamento.length > 0) {
+        // Buscar pasta vinculada ao contrato
+        const pasta = await getPastaByContrato(id);
+        const pastaId = pasta?.id || undefined;
+
+        // Buscar parceiro e percentual
+        let percentualParceiro = 0;
+        let parceiroNome = "";
+        if (contrato.parceiroId) {
+          const parceiro = await getParceiro(contrato.parceiroId);
+          if (parceiro) {
+            percentualParceiro = parceiro.percentualParceria / 100;
+            parceiroNome = parceiro.razaoSocial;
+          }
+        }
+
         const valorParcela = contrato.valor / contrato.quantidadeParcelas;
         for (let i = 0; i < contrato.datasPagamento.length; i++) {
-          const lancamento: Lancamento = {
+          const valorParcelaRound = Math.round(valorParcela * 100) / 100;
+
+          // Lançamento A Receber (honorários)
+          const lancReceber: Lancamento = {
             id: crypto.randomUUID(),
             clienteId: contrato.clienteId || undefined,
+            pastaId,
             tipo: "a_receber",
-            valor: Math.round(valorParcela * 100) / 100,
+            valor: valorParcelaRound,
             dataVencimento: contrato.datasPagamento[i],
             valorPago: 0,
             dataPagamento: null,
             planoContas: "honorarios",
             boletoUrl: "",
             descricao: `Parcela ${i + 1}/${contrato.quantidadeParcelas} — ${contrato.titulo || "Contrato"}`,
-            repasseParceiro: 0,
+            repasseParceiro: percentualParceiro > 0 ? Math.round(valorParcelaRound * percentualParceiro * 100) / 100 : 0,
             status: "pendente",
           };
-          await saveLancamento(lancamento);
+          await saveLancamento(lancReceber);
+
+          // Lançamento A Pagar (repasse ao parceiro)
+          if (percentualParceiro > 0) {
+            const valorRepasse = Math.round(valorParcelaRound * percentualParceiro * 100) / 100;
+            const lancPagar: Lancamento = {
+              id: crypto.randomUUID(),
+              clienteId: contrato.clienteId || undefined,
+              pastaId,
+              tipo: "a_pagar",
+              valor: valorRepasse,
+              dataVencimento: contrato.datasPagamento[i],
+              valorPago: 0,
+              dataPagamento: null,
+              planoContas: "repasse_parceiro",
+              boletoUrl: "",
+              descricao: `Repasse ${parceiroNome} (${(percentualParceiro * 100).toFixed(0)}%) — Parcela ${i + 1}/${contrato.quantidadeParcelas}`,
+              repasseParceiro: 0,
+              status: "pendente",
+            };
+            await saveLancamento(lancPagar);
+          }
         }
       }
 
