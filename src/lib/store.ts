@@ -1122,16 +1122,22 @@ export async function savePasta(p: Pasta): Promise<void> {
 }
 
 export async function deletePasta(id: string): Promise<void> {
-  // Excluir registros dependentes primeiro
+  // Excluir registros dependentes primeiro (ordem importa por FKs internas)
+  await supabase.from("wf_patrimonial_subtarefas").delete().eq("pasta_id", id);
+  await supabase.from("wf_patrimonial_docs").delete().eq("pasta_id", id);
+  await supabase.from("wf_patrimonial_analise").delete().eq("pasta_id", id);
+  await supabase.from("wf_patrimonial").delete().eq("pasta_id", id);
+  await supabase.from("wf_planejamento").delete().eq("pasta_id", id);
+  await supabase.from("pontos").delete().eq("pasta_id", id);
+  await supabase.from("controle_rct").delete().eq("pasta_id", id);
+  await supabase.from("wf_rct").delete().eq("pasta_id", id);
+  await supabase.from("creditos").delete().eq("pasta_id", id);
   await supabase.from("financeiro").delete().eq("pasta_id", id);
   await supabase.from("tarefas").delete().eq("pasta_id", id);
   await supabase.from("anotacoes").delete().eq("pasta_id", id);
-  await supabase.from("creditos").delete().eq("pasta_id", id);
-  await supabase.from("processos").delete().eq("pasta_id", id);
-  await supabase.from("wf_rct").delete().eq("pasta_id", id);
-  await supabase.from("controle_rct").delete().eq("pasta_id", id);
-  await supabase.from("pontos").delete().eq("pasta_id", id);
   await supabase.from("publicacoes").delete().eq("pasta_id", id);
+  await supabase.from("documentos").delete().eq("pasta_id", id);
+  await supabase.from("processos").delete().eq("pasta_id", id);
   const { error } = await supabase.from("pastas").delete().eq("id", id);
   if (error) throw new Error(`Erro ao excluir pasta: ${error.message}`);
 }
