@@ -94,9 +94,13 @@ export default function PastaDetailPage({
   }
 
   async function handleDelete() {
-    if (!window.confirm("Tem certeza que deseja excluir?")) return;
-    await deletePasta(id);
-    router.push("/pastas");
+    if (!window.confirm("Tem certeza que deseja excluir esta pasta e todos os registros vinculados?")) return;
+    try {
+      await deletePasta(id);
+      router.push("/pastas");
+    } catch (err) {
+      alert(`Erro ao excluir: ${err instanceof Error ? err.message : err}`);
+    }
   }
 
   if (loading) {

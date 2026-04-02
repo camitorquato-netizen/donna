@@ -1122,8 +1122,18 @@ export async function savePasta(p: Pasta): Promise<void> {
 }
 
 export async function deletePasta(id: string): Promise<void> {
+  // Excluir registros dependentes primeiro
+  await supabase.from("financeiro").delete().eq("pasta_id", id);
+  await supabase.from("tarefas").delete().eq("pasta_id", id);
+  await supabase.from("anotacoes").delete().eq("pasta_id", id);
+  await supabase.from("creditos").delete().eq("pasta_id", id);
+  await supabase.from("processos").delete().eq("pasta_id", id);
+  await supabase.from("wf_rct").delete().eq("pasta_id", id);
+  await supabase.from("controle_rct").delete().eq("pasta_id", id);
+  await supabase.from("pontos").delete().eq("pasta_id", id);
+  await supabase.from("publicacoes").delete().eq("pasta_id", id);
   const { error } = await supabase.from("pastas").delete().eq("id", id);
-  if (error) console.error("[Store] Erro excluir pasta:", error);
+  if (error) throw new Error(`Erro ao excluir pasta: ${error.message}`);
 }
 
 export async function getPastasByContrato(contratoId: string): Promise<Pasta[]> {
