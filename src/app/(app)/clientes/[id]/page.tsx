@@ -36,6 +36,7 @@ export default function ClienteDetailPage({
   const { isReadOnly, canDelete } = useAuth();
 
   const isNew = searchParams.get("novo") === "1";
+  const returnTo = searchParams.get("returnTo") || "";
   const [cliente, setCliente] = useState<Cliente | null>(null);
   const [contratos, setContratos] = useState<Contrato[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,6 +83,11 @@ export default function ClienteDetailPage({
       setIsEditing(false);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
+      // Se veio de outro lugar (ex: contrato), voltar para lá
+      if (returnTo) {
+        router.push(returnTo);
+        return;
+      }
       // Se é novo cliente, oferecer criar contrato
       if (isNew) {
         setShowCreateContract(true);
@@ -182,7 +188,7 @@ export default function ClienteDetailPage({
       <div className="flex items-center justify-between mb-6 gap-3">
         <div>
           <h1 className="font-serif text-xl sm:text-2xl font-bold text-st-dark truncate">
-            {cliente.nome || "Novo Cliente"}
+            {(cliente.nome || "Novo Cliente").toUpperCase()}
           </h1>
           {saved && (
             <span className="text-sm text-st-green font-sans font-medium">

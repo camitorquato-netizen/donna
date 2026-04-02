@@ -84,7 +84,7 @@ export default function ParceirosPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-sans font-semibold text-st-dark">
-                    {p.razaoSocial || "Sem nome"}
+                    {(p.razaoSocial || "Sem nome").toUpperCase()}
                   </h3>
                   <div className="flex items-center gap-4 mt-1 text-xs text-st-muted font-sans">
                     {p.cpfCnpj && <span>{p.cpfCnpj}</span>}

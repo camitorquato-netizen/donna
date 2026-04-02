@@ -206,9 +206,25 @@ export default function PastaDetailPage({
                 {PASTA_STATUS_LABELS[pasta.status as PastaStatus] || pasta.status}
               </Badge>
             </div>
-            {pasta.clienteNome && (
+            {(pasta.clienteNome || pasta.contratoId) && (
               <p className="text-sm text-st-muted font-sans mt-2">
-                Cliente: <strong>{pasta.clienteNome}</strong>
+                {pasta.clienteNome && (
+                  <>
+                    Cliente:{" "}
+                    <button onClick={() => router.push(`/clientes/${pasta.clienteId}`)} className="font-bold text-st-gold hover:underline cursor-pointer">
+                      {pasta.clienteNome.toUpperCase()}
+                    </button>
+                  </>
+                )}
+                {pasta.clienteNome && pasta.contratoId && <span className="mx-2">|</span>}
+                {pasta.contratoId && (
+                  <>
+                    Contrato:{" "}
+                    <button onClick={() => router.push(`/contratos/${pasta.contratoId}`)} className="font-bold text-st-gold hover:underline cursor-pointer">
+                      {pasta.contratoTitulo || "Ver contrato"}
+                    </button>
+                  </>
+                )}
               </p>
             )}
           </div>

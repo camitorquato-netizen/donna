@@ -136,7 +136,7 @@ export default function ClientesPage() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="font-serif font-bold text-st-dark text-sm sm:text-base truncate">
-                        {c.nome}
+                        {c.nome.toUpperCase()}
                       </h3>
                       <Badge color={c.tipoPessoa === "PJ" ? "dark" : "gold"}>
                         {c.tipoPessoa}

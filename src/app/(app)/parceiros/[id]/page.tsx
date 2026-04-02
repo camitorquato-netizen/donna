@@ -16,6 +16,7 @@ export default function ParceiroDetailPage({
   const { canEdit, canDelete } = useAuth();
 
   const isNew = searchParams.get("novo") === "1";
+  const returnTo = searchParams.get("returnTo") || "";
   const [parceiro, setParceiro] = useState<Parceiro | null>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(isNew);
@@ -43,6 +44,10 @@ export default function ParceiroDetailPage({
     if (!parceiro) return;
     try {
       await saveParceiro(parceiro);
+      if (returnTo) {
+        router.push(returnTo);
+        return;
+      }
       setIsEditing(false);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -88,7 +93,7 @@ export default function ParceiroDetailPage({
             ← Parceiros
           </button>
           <h1 className="text-2xl font-serif text-st-dark">
-            {parceiro.razaoSocial || "Novo Parceiro"}
+            {(parceiro.razaoSocial || "Novo Parceiro").toUpperCase()}
           </h1>
         </div>
         <div className="flex items-center gap-2">

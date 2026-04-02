@@ -191,13 +191,15 @@ export default function ContratoDetailPage({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <ClienteSelector
               value={contrato.clienteId}
-              onChange={(id) => set("clienteId", id)}
+              onChange={(cid) => set("clienteId", cid)}
               disabled={dis}
+              returnTo={`/contratos/${id}`}
             />
             <ParceiroSelector
               value={contrato.parceiroId || ""}
-              onChange={(id) => set("parceiroId", id || undefined)}
+              onChange={(pid) => set("parceiroId", pid || undefined)}
               disabled={dis}
+              returnTo={`/contratos/${id}`}
             />
           </div>
         </section>
@@ -492,8 +494,10 @@ export default function ContratoDetailPage({
             </div>
             {contrato.clienteNome && (
               <p className="text-xs text-st-muted font-sans mt-2">
-                Cliente: <strong>{contrato.clienteNome}</strong>
-                {contrato.titulo && <> | Contrato: <strong>{contrato.titulo}</strong></>}
+                Cliente:{" "}
+                <button onClick={() => router.push(`/clientes/${contrato.clienteId}`)} className="font-bold text-st-gold hover:underline cursor-pointer">
+                  {contrato.clienteNome.toUpperCase()}
+                </button>
               </p>
             )}
           </section>

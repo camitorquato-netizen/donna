@@ -9,6 +9,7 @@ interface ClienteSelectorProps {
   onChange: (clienteId: string) => void;
   label?: string;
   disabled?: boolean;
+  returnTo?: string;
 }
 
 export default function ClienteSelector({
@@ -16,6 +17,7 @@ export default function ClienteSelector({
   onChange,
   label = "Cliente",
   disabled = false,
+  returnTo,
 }: ClienteSelectorProps) {
   const router = useRouter();
   const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -36,7 +38,8 @@ export default function ClienteSelector({
     const id = crypto.randomUUID();
     const c = createEmptyCliente(id);
     await saveCliente(c);
-    router.push(`/clientes/${id}`);
+    const ret = returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : "";
+    router.push(`/clientes/${id}?novo=1${ret}`);
   }
 
   return (
@@ -53,7 +56,7 @@ export default function ClienteSelector({
             : "cursor-pointer"
         }`}
       >
-        {selected ? selected.nome : "Selecione um cliente..."}
+        {selected ? selected.nome.toUpperCase() : "Selecione um cliente..."}
       </button>
 
       {open && !disabled && (
@@ -86,7 +89,7 @@ export default function ClienteSelector({
                   c.id === value ? "bg-st-gold/10 text-st-gold" : "text-st-dark"
                 }`}
               >
-                <span className="font-medium">{c.nome}</span>
+                <span className="font-medium">{c.nome.toUpperCase()}</span>
                 <span className="text-xs text-st-muted ml-2">
                   {c.tipoPessoa}
                 </span>

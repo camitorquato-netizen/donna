@@ -9,6 +9,7 @@ interface ParceiroSelectorProps {
   onChange: (parceiroId: string) => void;
   label?: string;
   disabled?: boolean;
+  returnTo?: string;
 }
 
 export default function ParceiroSelector({
@@ -16,6 +17,7 @@ export default function ParceiroSelector({
   onChange,
   label = "Parceiro",
   disabled = false,
+  returnTo,
 }: ParceiroSelectorProps) {
   const router = useRouter();
   const [parceiros, setParceiros] = useState<Parceiro[]>([]);
@@ -34,7 +36,8 @@ export default function ParceiroSelector({
 
   function handleNewParceiro() {
     const id = crypto.randomUUID();
-    router.push(`/parceiros/${id}?novo=1`);
+    const ret = returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : "";
+    router.push(`/parceiros/${id}?novo=1${ret}`);
   }
 
   return (
@@ -51,7 +54,7 @@ export default function ParceiroSelector({
             : "cursor-pointer"
         }`}
       >
-        {selected ? selected.razaoSocial : "Selecione um parceiro..."}
+        {selected ? selected.razaoSocial.toUpperCase() : "Selecione um parceiro..."}
       </button>
 
       {open && !disabled && (
@@ -93,7 +96,7 @@ export default function ParceiroSelector({
                 p.id === value ? "bg-st-gold/10 text-st-gold" : "text-st-dark"
               }`}
             >
-              <span className="font-medium">{p.razaoSocial}</span>
+              <span className="font-medium">{p.razaoSocial.toUpperCase()}</span>
               {p.percentualParceria > 0 && (
                 <span className="text-xs text-st-muted ml-2">
                   {p.percentualParceria}%
