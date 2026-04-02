@@ -1126,11 +1126,16 @@ export async function deletePasta(id: string): Promise<void> {
   if (error) console.error("[Store] Erro excluir pasta:", error);
 }
 
-export async function getPastaByContrato(contratoId: string): Promise<Pasta | null> {
+export async function getPastasByContrato(contratoId: string): Promise<Pasta[]> {
   const { data, error } = await supabase
-    .from("pastas").select(PASTA_SELECT).eq("contrato_id", contratoId).maybeSingle();
-  if (error) { console.error("[Store] Erro pasta contrato:", error); return null; }
-  return data ? rowToPasta(data as PastaRow) : null;
+    .from("pastas").select(PASTA_SELECT).eq("contrato_id", contratoId).order("created_at", { ascending: false });
+  if (error) { console.error("[Store] Erro pastas contrato:", error); return []; }
+  return (data || []).map((r) => rowToPasta(r as PastaRow));
+}
+
+export async function getPastaByContrato(contratoId: string): Promise<Pasta | null> {
+  const pastas = await getPastasByContrato(contratoId);
+  return pastas.length > 0 ? pastas[0] : null;
 }
 
 export async function getPastasByCliente(clienteId: string): Promise<Pasta[]> {

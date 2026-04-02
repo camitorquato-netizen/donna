@@ -2,7 +2,7 @@
 import { use, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Contrato, ContratoStatus, CONTRATO_STATUS_LABELS, CONTRATO_OBJETOS, Lancamento, Pasta } from "@/lib/types";
-import { getContrato, saveContrato, saveLancamento, getPastaByContrato, getParceiro } from "@/lib/store";
+import { getContrato, saveContrato, saveLancamento, getPastasByContrato, getPastaByContrato, getParceiro } from "@/lib/store";
 import Btn from "@/components/Btn";
 import ClienteSelector from "@/components/ClienteSelector";
 import ParceiroSelector from "@/components/ParceiroSelector";
@@ -22,7 +22,7 @@ export default function ContratoDetailPage({
   const router = useRouter();
   const { isReadOnly } = useAuth();
   const [contrato, setContrato] = useState<Contrato | null>(null);
-  const [pastaVinculada, setPastaVinculada] = useState<Pasta | null>(null);
+  const [pastasVinculadas, setPastasVinculadas] = useState<Pasta[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -30,12 +30,12 @@ export default function ContratoDetailPage({
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [c, p] = await Promise.all([
+      const [c, ps] = await Promise.all([
         getContrato(id),
-        getPastaByContrato(id),
+        getPastasByContrato(id),
       ]);
       setContrato(c);
-      setPastaVinculada(p);
+      setPastasVinculadas(ps);
       if (c && !c.titulo) setIsEditing(true);
     } catch (err) {
       console.error("[ContratoDetail] Erro:", err);
@@ -240,17 +240,22 @@ export default function ContratoDetailPage({
                   <p className="text-sm text-st-muted font-sans">Nenhum parceiro vinculado</p>
                 )}
               </div>
-              {pastaVinculada && (
-                <div>
+              {pastasVinculadas.length > 0 && (
+                <div className="sm:col-span-2">
                   <label className="block text-xs font-sans text-st-muted mb-1">
-                    Pasta
+                    {pastasVinculadas.length === 1 ? "Pasta" : "Pastas"}
                   </label>
-                  <button
-                    onClick={() => router.push(`/pastas/${pastaVinculada.id}`)}
-                    className="text-sm font-sans font-bold text-st-gold hover:underline cursor-pointer"
-                  >
-                    {pastaVinculada.titulo || pastaVinculada.numero || "Ver pasta"}
-                  </button>
+                  <div className="flex flex-wrap gap-2">
+                    {pastasVinculadas.map((p) => (
+                      <button
+                        key={p.id}
+                        onClick={() => router.push(`/pastas/${p.id}`)}
+                        className="text-sm font-sans font-bold text-st-gold hover:underline cursor-pointer"
+                      >
+                        {p.titulo || p.numero || "Ver pasta"}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -528,34 +533,37 @@ export default function ContratoDetailPage({
             <h2 className="font-serif font-bold text-st-dark">
               Pasta de Trabalho
             </h2>
-            {pastaVinculada ? (
+            {!isReadOnly && (
               <button
-                onClick={() => router.push(`/pastas/${pastaVinculada.id}`)}
-                className="text-sm font-sans font-bold text-st-gold hover:underline cursor-pointer"
+                onClick={() => {
+                  const params = new URLSearchParams({
+                    contratoId: id,
+                    clienteId: contrato.clienteId || "",
+                    titulo: contrato.titulo || "",
+                    clienteNome: contrato.clienteNome || "",
+                    contratoTitulo: contrato.titulo || "",
+                  });
+                  router.push(`/pastas/novo?${params.toString()}`);
+                }}
+                className="text-sm text-st-gold font-sans hover:underline cursor-pointer"
               >
-                {pastaVinculada.titulo || pastaVinculada.numero || "Ver pasta"}
+                + Criar Pasta
               </button>
-            ) : (
-              !isReadOnly && (
-                <button
-                  onClick={() => {
-                    const params = new URLSearchParams({
-                      contratoId: id,
-                      clienteId: contrato.clienteId || "",
-                      titulo: contrato.titulo || "",
-                      clienteNome: contrato.clienteNome || "",
-                      contratoTitulo: contrato.titulo || "",
-                    });
-                    router.push(`/pastas/novo?${params.toString()}`);
-                  }}
-                  className="text-sm text-st-gold font-sans hover:underline cursor-pointer"
-                >
-                  + Criar Pasta para este Contrato
-                </button>
-              )
             )}
           </div>
-          {!pastaVinculada && (
+          {pastasVinculadas.length > 0 ? (
+            <div className="mt-3 space-y-2">
+              {pastasVinculadas.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => router.push(`/pastas/${p.id}`)}
+                  className="block text-sm font-sans font-bold text-st-gold hover:underline cursor-pointer"
+                >
+                  {p.titulo || p.numero || "Ver pasta"}
+                </button>
+              ))}
+            </div>
+          ) : (
             <p className="text-xs text-st-muted font-sans mt-2">Nenhuma pasta vinculada a este contrato.</p>
           )}
         </section>
